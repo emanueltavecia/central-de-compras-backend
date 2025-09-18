@@ -110,14 +110,6 @@ CREATE TABLE products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE TABLE product_images (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  url TEXT NOT NULL,
-  alt TEXT,
-  sort_order INTEGER DEFAULT 0
-);
-
 CREATE TABLE payment_conditions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   supplier_org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
