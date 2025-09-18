@@ -29,26 +29,3 @@ export class HealthDataSchema {
   })
   environment: string
 }
-
-export class HealthResponseSchema {
-  @ApiProperty({
-    description: 'Indica se a operação foi bem-sucedida',
-    example: true,
-    type: 'boolean',
-  })
-  success: boolean
-
-  @ApiProperty({
-    description: 'Mensagem descritiva da operação',
-    example: 'Servidor funcionando corretamente',
-    type: 'string',
-  })
-  message: string
-
-  @ApiProperty({
-    description: 'Dados do health check',
-    type: 'object',
-    schema: HealthDataSchema,
-  })
-  data: HealthDataSchema
-}

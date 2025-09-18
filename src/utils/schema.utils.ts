@@ -1,7 +1,4 @@
-import {
-  getApiPropertyMetadata,
-  ApiPropertyOptions,
-} from '../decorators/api-property.decorator'
+import { getApiPropertyMetadata, ApiPropertyOptions } from '@/decorators'
 
 export interface JSONSchemaProperty {
   type: string
@@ -19,12 +16,6 @@ export interface JSONSchemaProperty {
 
 export interface SwaggerSchemaProperty extends JSONSchemaProperty {
   example?: any
-  required?: string[]
-}
-
-export interface JSONSchema {
-  type: 'object'
-  properties: Record<string, JSONSchemaProperty>
   required?: string[]
 }
 

@@ -10,14 +10,14 @@ export class ErrorResponseSchema {
 
   @ApiProperty({
     description: 'Mensagem de erro',
-    example: 'Dados inválidos fornecidos',
+    example: 'Erro interno do servidor',
     type: 'string',
   })
   message: string
 
   @ApiProperty({
     description: 'Detalhes específicos do erro',
-    example: 'Email já está em uso',
+    example: 'Detalhes adicionais sobre o erro ocorrido',
     type: 'string',
     required: false,
   })

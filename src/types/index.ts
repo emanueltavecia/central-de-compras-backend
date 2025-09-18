@@ -1,4 +1,4 @@
-import { FastifyRequest, FastifyReply } from 'fastify'
+import { Request, Response } from 'express'
 
 export interface ApiResponse<T = any> {
   success: boolean
@@ -12,12 +12,8 @@ export type RouteHandler<
   Querystring = unknown,
   Body = unknown,
 > = (
-  request: FastifyRequest<{
-    Params: Params
-    Querystring: Querystring
-    Body: Body
-  }>,
-  reply: FastifyReply,
+  request: Request<Params, any, Body, Querystring>,
+  response: Response,
 ) => Promise<void>
 
 export interface ValidationError {

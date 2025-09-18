@@ -1,20 +1,11 @@
-import { FastifyInstance } from 'fastify'
+import { Router } from 'express'
+import type { Router as ExpressRouter } from 'express'
 import { HealthController } from '@/controllers/health.controller'
-import { HealthResponseSchema } from '@/models/health.schema'
-import { createSchemaFromClass } from '@/utils'
+import { registerController } from '@/decorators/route.decorator'
 
-export async function healthRoutes(fastify: FastifyInstance) {
-  fastify.get(
-    '/health',
-    {
-      schema: {
-        tags: ['Health'],
-        summary: 'Health check endpoint',
-        response: {
-          200: createSchemaFromClass(HealthResponseSchema),
-        },
-      },
-    },
-    HealthController.healthCheck,
-  )
-}
+export const healthRoutes: ExpressRouter = Router()
+
+export const healthSwaggerPaths = registerController(
+  healthRoutes,
+  HealthController,
+)

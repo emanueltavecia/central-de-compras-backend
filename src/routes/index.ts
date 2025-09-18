@@ -1,6 +1,10 @@
-import { FastifyInstance } from 'fastify'
-import { healthRoutes } from './health.routes'
+import { Express } from 'express'
+import { healthRoutes, healthSwaggerPaths } from './health.routes'
 
-export async function registerRoutes(fastify: FastifyInstance) {
-  await fastify.register(healthRoutes)
+export function registerRoutes(app: Express) {
+  app.use(healthRoutes)
+}
+
+export const swaggerPaths = {
+  health: healthSwaggerPaths,
 }

@@ -13,17 +13,20 @@ export const config = {
     credentials: true,
   },
   swagger: {
-    routePrefix: '/docs',
-    swagger: {
+    definition: {
+      openapi: '3.0.0',
       info: {
         title: 'Interdisciplinar API',
         description: 'API documentation for Interdisciplinar project',
         version: '1.0.0',
       },
-      host: `localhost:${process.env.PORT || '3000'}`,
-      schemes: ['http'],
-      consumes: ['application/json'],
-      produces: ['application/json'],
+      servers: [
+        {
+          url: `http://localhost:${process.env.PORT || '3000'}`,
+          description: 'Development server',
+        },
+      ],
     },
+    apis: ['./src/routes/*.ts'],
   },
 }

@@ -1,52 +1,40 @@
-import Fastify from 'fastify'
-import cors from '@fastify/cors'
-import helmet from '@fastify/helmet'
-import swagger from '@fastify/swagger'
-import swaggerUi from '@fastify/swagger-ui'
+import express, { Express, Request, Response } from 'express'
+import cors from 'cors'
+import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
 
 import { config } from '@/config'
-import { registerRoutes } from '@/routes'
-import { requestLogger } from '@/middleware'
+import { registerRoutes, swaggerPaths } from '@/routes'
+import { generateSwaggerSpec } from '@/decorators/route.decorator'
 
-export async function createApp() {
-  const fastify = Fastify({
-    ajv: {
-      customOptions: {
-        strict: false,
-        keywords: ['example'],
-      },
-    },
-  })
+export function createApp(): Express {
+  const app: Express = express()
 
-  await fastify.register(helmet, {
-    contentSecurityPolicy: false,
-  })
+  app.use(helmet())
 
-  await fastify.register(cors, config.cors)
+  app.use(cors(config.cors))
 
-  await fastify.register(swagger, config.swagger)
+  app.use(express.json())
+  app.use(express.urlencoded({ extended: true }))
 
-  await fastify.register(swaggerUi, {
-    routePrefix: config.swagger.routePrefix,
-  })
+  registerRoutes(app)
 
-  fastify.addHook('preHandler', requestLogger)
+  const swaggerSpec = generateSwaggerSpec(swaggerPaths)
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
-  fastify.setErrorHandler(async (error, request, reply) => {
-    request.log.error(error)
+  app.use((error: Error, request: Request, response: Response) => {
+    console.error(error)
 
-    const statusCode = reply.statusCode >= 400 ? reply.statusCode : 500
+    const statusCode = response.statusCode >= 400 ? response.statusCode : 500
 
-    reply.status(statusCode).send({
+    response.status(statusCode).json({
       success: false,
       message: error.message || 'Internal Server Error',
       error: error.name,
     })
   })
 
-  await registerRoutes(fastify)
-
-  return fastify
+  return app
 }
 
 export { config }
