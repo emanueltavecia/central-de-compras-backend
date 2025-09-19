@@ -1,4 +1,11 @@
-import { ApiProperty, ApiPropertyOptions, SchemaType } from '@/decorators'
+import { ApiProperty, SchemaType } from '@/decorators'
+
+interface SuccessResponseSchemaProps<T> {
+  message?: string
+  schema?: T
+  dataDescription?: string
+  isArray?: boolean
+}
 
 export class SuccessResponseSchema<T> {
   @ApiProperty({
@@ -8,36 +15,44 @@ export class SuccessResponseSchema<T> {
   })
   success: boolean
 
-  @ApiProperty({
-    description: 'Mensagem descritiva da operação',
-    example: 'Servidor funcionando corretamente',
-    type: 'string',
-  })
   message: string
 
-  data: T
+  data?: T
 
-  static create<T>(
-    dataSchema: SchemaType,
-    dataDescription?: string,
-  ): new () => SuccessResponseSchema<T> {
+  static create<T extends SchemaType>({
+    message = 'Mensagem de sucesso.',
+    schema,
+    dataDescription,
+    isArray = false,
+  }: SuccessResponseSchemaProps<T>): new () => SuccessResponseSchema<T> {
     class ResponseWithData extends SuccessResponseSchema<T> {
       constructor() {
         super()
-        const dataPropertyOptions: ApiPropertyOptions = {
-          description: dataDescription || 'Dados da resposta',
-          type: 'object',
-          schema: dataSchema,
-        }
 
-        ApiProperty(dataPropertyOptions)(this, 'data')
+        ApiProperty({
+          description: 'Mensagem descritiva da operação',
+          example: message,
+          type: 'string',
+        })(this, 'message')
+
+        ApiProperty({
+          description: dataDescription || 'Dados da resposta',
+          type: isArray ? 'array' : 'object',
+          schema,
+        })(this, 'data')
       }
     }
 
     ApiProperty({
+      description: 'Mensagem descritiva da operação',
+      example: message,
+      type: 'string',
+    })(ResponseWithData.prototype, 'message')
+
+    ApiProperty({
       description: dataDescription || 'Dados da resposta',
-      type: 'object',
-      schema: dataSchema,
+      type: isArray ? 'array' : 'object',
+      schema,
     })(ResponseWithData.prototype, 'data')
 
     return ResponseWithData

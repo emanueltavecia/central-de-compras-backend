@@ -11,7 +11,7 @@ export interface JSONSchemaProperty {
   maxLength?: number
   pattern?: string
   properties?: Record<string, JSONSchemaProperty>
-  items?: JSONSchemaProperty
+  items?: JSONSchemaProperty & { required?: string[] }
 }
 
 export interface SwaggerSchemaProperty extends JSONSchemaProperty {
@@ -76,7 +76,14 @@ export function createSchemaFromClass(
       property.example = example
     }
 
-    if (propertyType === 'object' && schema) {
+    if (propertyType === 'array' && schema) {
+      const nestedSchema = createSchemaFromClass(schema, includeExamples)
+      property.items = {
+        type: 'object',
+        properties: nestedSchema.properties,
+        required: nestedSchema.required,
+      }
+    } else if (propertyType === 'object' && schema) {
       const nestedSchema = createSchemaFromClass(schema, includeExamples)
       property.properties = nestedSchema.properties
       if (nestedSchema.required) {

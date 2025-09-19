@@ -1,12 +1,14 @@
 import { Request, Response } from 'express'
 import type { Router as ExpressRouter } from 'express'
 import { createSchemaFromClass } from '@/utils/schema.utils'
+import { validationMiddleware } from '@/middleware/validation.middleware'
 
 export function ApiRoute(config: {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch'
   path: string
   summary: string
   tags?: string[]
+  body?: new () => any
   responses?: Record<number, new () => any>
 }) {
   return function (
@@ -43,30 +45,51 @@ export function registerController(
   const swaggerPaths: any = {}
 
   routes.forEach((route: any) => {
-    const fullPath = controllerMeta.prefix + route.path
+    const fullPath =
+      controllerMeta.prefix + (route.path === '/' ? '' : route.path)
     const handler = route.handler.bind(controller)
 
     const routerMethod = router[route.method as keyof ExpressRouter] as (
       path: string,
-      handler: (req: Request, res: Response) => void,
+      ...handlers: any[]
     ) => void
-    routerMethod.call(router, fullPath, async (req: Request, res: Response) => {
-      try {
-        const result = await handler(req, res)
-        if (result && !res.headersSent) {
-          res.json(result)
+
+    const middlewares = []
+    if (route.body) {
+      middlewares.push(validationMiddleware(route.body))
+    }
+
+    routerMethod.call(
+      router,
+      fullPath,
+      ...middlewares,
+      async (req: Request, res: Response) => {
+        try {
+          let result
+          if (
+            route.method === 'post' ||
+            route.method === 'put' ||
+            route.method === 'patch'
+          ) {
+            result = await handler(req.body, req, res)
+          } else {
+            result = await handler(req, res)
+          }
+          if (result && !res.headersSent) {
+            res.json(result)
+          }
+        } catch (error) {
+          if (!res.headersSent) {
+            const err = error as Error
+            res.status(500).json({
+              success: false,
+              message: err.message || 'Internal Server Error',
+              error: err.name,
+            })
+          }
         }
-      } catch (error) {
-        if (!res.headersSent) {
-          const err = error as Error
-          res.status(500).json({
-            success: false,
-            message: err.message || 'Internal Server Error',
-            error: err.name,
-          })
-        }
-      }
-    })
+      },
+    )
 
     if (!swaggerPaths[fullPath]) {
       swaggerPaths[fullPath] = {}
@@ -75,6 +98,16 @@ export function registerController(
     swaggerPaths[fullPath][route.method] = {
       tags: route.tags || controllerMeta.tags || [],
       summary: route.summary,
+      requestBody: route.body
+        ? {
+            required: true,
+            content: {
+              'application/json': {
+                schema: createSchemaFromClass(route.body, true),
+              },
+            },
+          }
+        : undefined,
       responses: {},
     }
 

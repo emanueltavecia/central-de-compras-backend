@@ -1,3 +1,4 @@
+import { ValidationError } from '@/types'
 import { ApiProperty } from '../decorators/api-property.decorator'
 
 export class ErrorResponseSchema {
@@ -46,22 +47,13 @@ export class ValidationErrorResponseSchema {
       validationErrors: [
         {
           field: 'email',
-          message: 'Email deve ter um formato válido',
+          message: 'E-mail inválido',
           value: 'email-inválido',
-        },
-        {
-          field: 'age',
-          message: 'Idade deve ser maior que 18',
-          value: 15,
         },
       ],
     },
   })
   error: {
-    validationErrors: Array<{
-      field: string
-      message: string
-      value?: any
-    }>
+    validationErrors: ValidationError[]
   }
 }

@@ -25,6 +25,7 @@ export interface ApiPropertyOptions {
   maxLength?: number
   pattern?: string
   schema?: SchemaType
+  readOnly?: boolean
 }
 
 export interface ApiResponseOptions {

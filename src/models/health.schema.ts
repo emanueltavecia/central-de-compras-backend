@@ -1,6 +1,6 @@
 import { ApiProperty } from '../decorators/api-property.decorator'
 
-enum Environment {
+export enum Environment {
   DEVELOPMENT = 'development',
   PRODUCTION = 'production',
 }
@@ -27,5 +27,5 @@ export class HealthDataSchema {
     type: 'string',
     enum: Environment,
   })
-  environment: string
+  environment: Environment
 }
