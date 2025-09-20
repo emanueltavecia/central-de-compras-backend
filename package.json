@@ -9,7 +9,12 @@
     "build": "tsc && tsc-alias && resolve-tspaths",
     "start": "node dist/server.js",
     "lint": "prettier --write ./src && eslint ./src --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "db:test": "tsx db-test.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f postgres",
+    "docker:remove": "docker compose down -v"
   },
   "keywords": [],
   "author": "Emanuel Cardoso Tavecia, Guilherme Conti Machado, Gabriel Alves Teixeira, Caio Vinícius Guimarães de Oliveira Dagostim",
@@ -23,6 +28,8 @@
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "humps": "^2.0.1",
+    "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "routing-controllers": "^0.11.3",
     "swagger-ui-express": "^5.0.1"
@@ -31,7 +38,9 @@
     "@emanueltavecia/eslint-config": "1.0.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/humps": "^2.0.6",
     "@types/node": "^24.5.1",
+    "@types/pg": "^8.15.5",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "8.57.1",
     "resolve-tspaths": "^0.8.23",

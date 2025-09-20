@@ -1,9 +1,9 @@
 import 'reflect-metadata'
 import { createApp, config } from './app'
 
-function start() {
+async function start() {
   try {
-    const app = createApp()
+    const app = await createApp()
 
     app.listen(config.server.port, config.server.host, () => {
       console.log(

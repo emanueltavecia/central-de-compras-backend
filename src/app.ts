@@ -6,9 +6,15 @@ import swaggerUi from 'swagger-ui-express'
 import { config } from '@/config'
 import { registerRoutes, swaggerPaths } from '@/routes'
 import { generateSwaggerSpec } from '@/decorators'
+import { database } from '@/database/connection'
 
-export function createApp(): Express {
+export async function createApp(): Promise<Express> {
   const app: Express = express()
+
+  const isDbConnected = await database.testConnection()
+  if (!isDbConnected) {
+    console.warn('Database connection failed, but server will continue')
+  }
 
   app.use(helmet())
 
