@@ -1,3 +1,4 @@
+import { Enum } from '@/types'
 import 'reflect-metadata'
 
 export type ApiPropertyType =
@@ -18,7 +19,7 @@ export interface ApiPropertyOptions {
   required?: boolean
   type?: ApiPropertyType
   format?: string
-  enum?: readonly (string | number)[] | Record<string, string | number>
+  enum?: Enum
   minimum?: number
   maximum?: number
   minLength?: number

@@ -1,6 +1,7 @@
 import { IsEmail, IsEnum, IsOptional, IsString, IsUrl } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { OrgType } from '../enums'
+import { VALIDATION_MESSAGES } from '../utils'
 
 export class OrganizationSchema {
   @ApiProperty({
@@ -19,7 +20,7 @@ export class OrganizationSchema {
     enum: OrgType,
     required: true,
   })
-  @IsEnum(OrgType)
+  @IsEnum(OrgType, { message: VALIDATION_MESSAGES.INVALID_ENUM(OrgType) })
   type: OrgType
 
   @ApiProperty({
@@ -29,7 +30,7 @@ export class OrganizationSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   legalName?: string
 
   @ApiProperty({
@@ -39,7 +40,7 @@ export class OrganizationSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   tradeName?: string
 
   @ApiProperty({
@@ -49,7 +50,7 @@ export class OrganizationSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   taxId?: string
 
   @ApiProperty({
@@ -59,7 +60,7 @@ export class OrganizationSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_PHONE })
   phone?: string
 
   @ApiProperty({
@@ -70,7 +71,7 @@ export class OrganizationSchema {
     required: false,
   })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: VALIDATION_MESSAGES.INVALID_EMAIL })
   email?: string
 
   @ApiProperty({
@@ -81,7 +82,7 @@ export class OrganizationSchema {
     required: false,
   })
   @IsOptional()
-  @IsUrl()
+  @IsUrl({}, { message: VALIDATION_MESSAGES.INVALID_URL })
   website?: string
 
   @ApiProperty({

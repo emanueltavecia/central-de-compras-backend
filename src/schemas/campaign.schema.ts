@@ -18,6 +18,7 @@ import {
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { CampaignType, CampaignScope } from '../enums'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 @ValidatorConstraint({ name: 'isEndDateAfterStartDate', async: false })
 class IsEndDateAfterStartDateConstraint
@@ -32,7 +33,7 @@ class IsEndDateAfterStartDateConstraint
   }
 
   defaultMessage() {
-    return 'A data de fim deve ser posterior à data de início'
+    return VALIDATION_MESSAGES.INVALID_DATE_RANGE
   }
 }
 
@@ -53,7 +54,8 @@ export class CampaignSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   supplierOrgId: string
 
   @ApiProperty({
@@ -62,8 +64,8 @@ export class CampaignSchema {
     type: 'string',
     required: true,
   })
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   name: string
 
   @ApiProperty({
@@ -73,7 +75,9 @@ export class CampaignSchema {
     enum: CampaignType,
     required: true,
   })
-  @IsEnum(CampaignType)
+  @IsEnum(CampaignType, {
+    message: VALIDATION_MESSAGES.INVALID_ENUM(CampaignType),
+  })
   type: CampaignType
 
   @ApiProperty({
@@ -84,7 +88,9 @@ export class CampaignSchema {
     required: false,
   })
   @IsOptional()
-  @IsEnum(CampaignScope)
+  @IsEnum(CampaignScope, {
+    message: VALIDATION_MESSAGES.INVALID_ENUM(CampaignScope),
+  })
   scope?: CampaignScope
 
   @ApiProperty({
@@ -94,8 +100,11 @@ export class CampaignSchema {
     required: false,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @Min(0, { message: VALIDATION_MESSAGES.MIN_VALUE(0) })
   minTotal?: number
 
   @ApiProperty({
@@ -105,8 +114,8 @@ export class CampaignSchema {
     required: false,
   })
   @IsOptional()
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: VALIDATION_MESSAGES.INVALID_INTEGER })
+  @Min(1, { message: VALIDATION_MESSAGES.MIN_QUANTITY(1) })
   minQuantity?: number
 
   @ApiProperty({
@@ -118,10 +127,13 @@ export class CampaignSchema {
     maximum: 100,
   })
   @ValidateIf((o) => o.type === CampaignType.CASHBACK)
-  @IsNotEmpty()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(100)
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @Min(0, { message: VALIDATION_MESSAGES.MIN_VALUE(0) })
+  @Max(100, { message: VALIDATION_MESSAGES.MAX_VALUE(100) })
   cashbackPercent?: number
 
   @ApiProperty({
@@ -132,8 +144,8 @@ export class CampaignSchema {
     required: false,
   })
   @ValidateIf((o) => o.type === CampaignType.GIFT)
-  @IsNotEmpty()
-  @IsUUID()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   giftProductId?: string
 
   @ApiProperty({
@@ -144,8 +156,8 @@ export class CampaignSchema {
     required: false,
   })
   @ValidateIf((o) => o.scope === CampaignScope.CATEGORY)
-  @IsNotEmpty()
-  @IsUUID()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   categoryId?: string
 
   @ApiProperty({
@@ -158,9 +170,9 @@ export class CampaignSchema {
     required: false,
   })
   @ValidateIf((o) => o.scope === CampaignScope.PRODUCT)
-  @IsNotEmpty({ each: true })
-  @IsUUID(undefined, { each: true })
-  @ArrayMinSize(1)
+  @IsNotEmpty({ each: true, message: VALIDATION_MESSAGES.REQUIRED })
+  @IsUUID(undefined, { each: true, message: VALIDATION_MESSAGES.INVALID_UUID })
+  @ArrayMinSize(1, { message: VALIDATION_MESSAGES.ARRAY_MIN_SIZE(1) })
   productIds?: string[]
 
   @ApiProperty({
@@ -171,7 +183,7 @@ export class CampaignSchema {
     required: false,
   })
   @IsOptional()
-  @IsDateString()
+  @IsDateString({}, { message: VALIDATION_MESSAGES.INVALID_DATE })
   startAt?: string
 
   @ApiProperty({
@@ -182,7 +194,7 @@ export class CampaignSchema {
     required: false,
   })
   @IsOptional()
-  @IsDateString()
+  @IsDateString({}, { message: VALIDATION_MESSAGES.INVALID_DATE })
   @Validate(IsEndDateAfterStartDateConstraint)
   endAt?: string
 

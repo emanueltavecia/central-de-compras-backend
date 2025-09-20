@@ -7,6 +7,7 @@ import {
   IsUUID,
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class ContactSchema {
   @ApiProperty({
@@ -25,7 +26,8 @@ export class ContactSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   organizationId: string
 
   @ApiProperty({
@@ -34,8 +36,8 @@ export class ContactSchema {
     type: 'string',
     required: true,
   })
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   name: string
 
   @ApiProperty({
@@ -46,7 +48,7 @@ export class ContactSchema {
     required: false,
   })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: VALIDATION_MESSAGES.INVALID_EMAIL })
   email?: string
 
   @ApiProperty({
@@ -56,7 +58,7 @@ export class ContactSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_PHONE })
   phone?: string
 
   @ApiProperty({
@@ -66,7 +68,7 @@ export class ContactSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   role?: string
 
   @ApiProperty({
@@ -76,7 +78,7 @@ export class ContactSchema {
     required: false,
   })
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({ message: VALIDATION_MESSAGES.INVALID_BOOLEAN })
   isPrimary?: boolean
 
   @ApiProperty({

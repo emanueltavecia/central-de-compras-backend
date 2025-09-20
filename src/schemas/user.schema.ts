@@ -8,6 +8,7 @@ import {
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { UserAccountStatus } from '../enums'
+import { VALIDATION_MESSAGES } from '../utils'
 
 export class UserSchema {
   @ApiProperty({
@@ -26,8 +27,8 @@ export class UserSchema {
     format: 'email',
     required: true,
   })
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail({}, { message: VALIDATION_MESSAGES.INVALID_EMAIL })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   email: string
 
   @ApiProperty({
@@ -37,15 +38,20 @@ export class UserSchema {
     required: true,
     writeOnly: true,
   })
-  @IsNotEmpty()
-  @IsString()
-  @IsStrongPassword({
-    minLength: 8,
-    minLowercase: 1,
-    minUppercase: 1,
-    minNumbers: 1,
-    minSymbols: 1,
-  })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsStrongPassword(
+    {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    },
+    {
+      message: VALIDATION_MESSAGES.INVALID_STRONG_PASSWORD,
+    },
+  )
   password: string
 
   @ApiProperty({
@@ -55,7 +61,7 @@ export class UserSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   fullName?: string
 
   @ApiProperty({
@@ -65,7 +71,7 @@ export class UserSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_PHONE })
   phone?: string
 
   @ApiProperty({
@@ -75,8 +81,8 @@ export class UserSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
-  @IsNotEmpty()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   roleId: string
 
   @ApiProperty({
@@ -87,7 +93,7 @@ export class UserSchema {
     required: false,
   })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   organizationId?: string
 
   @ApiProperty({

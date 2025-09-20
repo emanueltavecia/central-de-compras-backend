@@ -1,10 +1,11 @@
 import { getApiPropertyMetadata, ApiPropertyOptions } from '@/decorators'
+import { Enum } from '@/types'
 
 export interface JSONSchemaProperty {
   type: string
   description?: string
   format?: string
-  enum?: readonly (string | number)[] | Record<string, string | number>
+  enum?: Enum
   minimum?: number
   maximum?: number
   minLength?: number

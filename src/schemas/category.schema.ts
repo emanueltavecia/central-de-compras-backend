@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
+import { VALIDATION_MESSAGES } from '../utils'
 
 export class CategorySchema {
   @ApiProperty({
@@ -17,8 +18,8 @@ export class CategorySchema {
     type: 'string',
     required: true,
   })
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   name: string
 
   @ApiProperty({
@@ -29,7 +30,7 @@ export class CategorySchema {
     required: false,
   })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   parentId?: string
 
   @ApiProperty({
@@ -39,7 +40,7 @@ export class CategorySchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   description?: string
 
   @ApiProperty({

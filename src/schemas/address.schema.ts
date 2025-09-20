@@ -1,11 +1,13 @@
 import {
   IsBoolean,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   Length,
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
+import { VALIDATION_MESSAGES } from '../utils'
 
 export class AddressSchema {
   @ApiProperty({
@@ -24,7 +26,8 @@ export class AddressSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   organizationId: string
 
   @ApiProperty({
@@ -34,7 +37,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   street?: string
 
   @ApiProperty({
@@ -44,7 +47,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   number?: string
 
   @ApiProperty({
@@ -54,7 +57,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   complement?: string
 
   @ApiProperty({
@@ -64,7 +67,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   neighborhood?: string
 
   @ApiProperty({
@@ -74,7 +77,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   city?: string
 
   @ApiProperty({
@@ -85,8 +88,8 @@ export class AddressSchema {
     maxLength: 2,
   })
   @IsOptional()
-  @IsString()
-  @Length(2, 2)
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Length(2, 2, { message: VALIDATION_MESSAGES.INVALID_STATE })
   state?: string
 
   @ApiProperty({
@@ -96,7 +99,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   postalCode?: string
 
   @ApiProperty({
@@ -106,7 +109,7 @@ export class AddressSchema {
     required: false,
   })
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({ message: VALIDATION_MESSAGES.INVALID_BOOLEAN })
   isPrimary?: boolean
 
   @ApiProperty({

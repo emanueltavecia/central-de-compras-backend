@@ -1,6 +1,7 @@
 import {
   IsDateString,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -10,6 +11,7 @@ import {
   Min,
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class SupplierStateConditionSchema {
   @ApiProperty({
@@ -28,7 +30,8 @@ export class SupplierStateConditionSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   supplierOrgId: string
 
   @ApiProperty({
@@ -38,8 +41,8 @@ export class SupplierStateConditionSchema {
     required: true,
     maxLength: 2,
   })
-  @IsString()
-  @Length(2, 2)
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Length(2, 2, { message: VALIDATION_MESSAGES.INVALID_STATE })
   state: string
 
   @ApiProperty({
@@ -51,9 +54,12 @@ export class SupplierStateConditionSchema {
     maximum: 100,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(100)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @Min(0, { message: VALIDATION_MESSAGES.MIN_VALUE(0) })
+  @Max(100, { message: VALIDATION_MESSAGES.MAX_VALUE(100) })
   cashbackPercent?: number
 
   @ApiProperty({
@@ -63,7 +69,7 @@ export class SupplierStateConditionSchema {
     required: false,
   })
   @IsOptional()
-  @IsInt()
+  @IsInt({ message: VALIDATION_MESSAGES.INVALID_INTEGER })
   paymentTermDays?: number
 
   @ApiProperty({
@@ -73,7 +79,10 @@ export class SupplierStateConditionSchema {
     required: false,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
   unitPriceAdjustment?: number
 
   @ApiProperty({
@@ -84,7 +93,7 @@ export class SupplierStateConditionSchema {
     required: false,
   })
   @IsOptional()
-  @IsDateString()
+  @IsDateString({}, { message: VALIDATION_MESSAGES.INVALID_DATE })
   effectiveFrom?: string
 
   @ApiProperty({
@@ -95,7 +104,7 @@ export class SupplierStateConditionSchema {
     required: false,
   })
   @IsOptional()
-  @IsDateString()
+  @IsDateString({}, { message: VALIDATION_MESSAGES.INVALID_DATE })
   effectiveTo?: string
 
   @ApiProperty({

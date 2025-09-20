@@ -1,6 +1,13 @@
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator'
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { OrderStatus } from '../enums'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class OrderStatusHistorySchema {
   @ApiProperty({
@@ -19,7 +26,8 @@ export class OrderStatusHistorySchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   orderId: string
 
   @ApiProperty({
@@ -39,7 +47,9 @@ export class OrderStatusHistorySchema {
     enum: OrderStatus,
     required: true,
   })
-  @IsEnum(OrderStatus)
+  @IsEnum(OrderStatus, {
+    message: VALIDATION_MESSAGES.INVALID_ENUM(OrderStatus),
+  })
   newStatus: OrderStatus
 
   @ApiProperty({
@@ -59,7 +69,7 @@ export class OrderStatusHistorySchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   note?: string
 
   @ApiProperty({

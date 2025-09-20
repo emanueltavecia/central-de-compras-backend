@@ -9,6 +9,7 @@ import {
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { PaymentMethod } from '../enums'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class PaymentConditionSchema {
   @ApiProperty({
@@ -27,7 +28,8 @@ export class PaymentConditionSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   supplierOrgId: string
 
   @ApiProperty({
@@ -37,7 +39,7 @@ export class PaymentConditionSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   name?: string
 
   @ApiProperty({
@@ -48,8 +50,8 @@ export class PaymentConditionSchema {
     minimum: 0,
   })
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({}, { message: VALIDATION_MESSAGES.INVALID_NUMBER })
+  @Min(0, { message: VALIDATION_MESSAGES.MIN_VALUE(0) })
   paymentTermDays?: number
 
   @ApiProperty({
@@ -59,8 +61,10 @@ export class PaymentConditionSchema {
     enum: PaymentMethod,
     required: true,
   })
-  @IsNotEmpty()
-  @IsEnum(PaymentMethod)
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsEnum(PaymentMethod, {
+    message: VALIDATION_MESSAGES.INVALID_ENUM(PaymentMethod),
+  })
   paymentMethod: PaymentMethod
 
   @ApiProperty({
@@ -70,7 +74,7 @@ export class PaymentConditionSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   notes?: string
 
   @ApiProperty({

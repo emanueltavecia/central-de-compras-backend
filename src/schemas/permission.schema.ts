@@ -1,4 +1,3 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { PermissionName } from '../enums'
 
@@ -19,7 +18,6 @@ export class PermissionSchema {
     enum: PermissionName,
     required: true,
   })
-  @IsEnum(PermissionName)
   name: PermissionName
 
   @ApiProperty({
@@ -28,7 +26,5 @@ export class PermissionSchema {
     type: 'string',
     required: false,
   })
-  @IsOptional()
-  @IsString()
   description?: string
 }

@@ -11,6 +11,7 @@ import { Type } from 'class-transformer'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { OrderStatus } from '../enums'
 import { OrderItemSchema } from './order-item.schema'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class OrderSchema {
   @ApiProperty({
@@ -29,7 +30,8 @@ export class OrderSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   storeOrgId: string
 
   @ApiProperty({
@@ -39,7 +41,8 @@ export class OrderSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   supplierOrgId: string
 
   @ApiProperty({
@@ -50,7 +53,9 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsEnum(OrderStatus)
+  @IsEnum(OrderStatus, {
+    message: VALIDATION_MESSAGES.INVALID_ENUM(OrderStatus),
+  })
   status?: OrderStatus
 
   @ApiProperty({
@@ -70,7 +75,7 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   shippingAddressId?: string
 
   @ApiProperty({
@@ -80,7 +85,10 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
   subtotalAmount?: number
 
   @ApiProperty({
@@ -90,7 +98,10 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
   shippingCost?: number
 
   @ApiProperty({
@@ -100,7 +111,10 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
   adjustments?: number
 
   @ApiProperty({
@@ -110,7 +124,10 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
   totalAmount?: number
 
   @ApiProperty({
@@ -140,7 +157,7 @@ export class OrderSchema {
     required: false,
   })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   paymentConditionId?: string
 
   @ApiProperty({
@@ -168,8 +185,8 @@ export class OrderSchema {
     schema: OrderItemSchema,
     required: true,
   })
-  @IsNotEmpty()
-  @ArrayMinSize(1)
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @ArrayMinSize(1, { message: VALIDATION_MESSAGES.ARRAY_MIN_SIZE(1) })
   @ValidateNested({ each: true })
   @Type(() => OrderItemSchema)
   items: OrderItemSchema[]

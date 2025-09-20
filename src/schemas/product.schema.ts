@@ -9,6 +9,7 @@ import {
   Min,
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class ProductSchema {
   @ApiProperty({
@@ -27,7 +28,8 @@ export class ProductSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   supplierOrgId: string
 
   @ApiProperty({
@@ -38,7 +40,7 @@ export class ProductSchema {
     required: false,
   })
   @IsOptional()
-  @IsUUID()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   categoryId?: string
 
   @ApiProperty({
@@ -47,8 +49,8 @@ export class ProductSchema {
     type: 'string',
     required: true,
   })
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   name: string
 
   @ApiProperty({
@@ -58,7 +60,7 @@ export class ProductSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   description?: string
 
   @ApiProperty({
@@ -68,7 +70,7 @@ export class ProductSchema {
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   unit?: string
 
   @ApiProperty({
@@ -78,8 +80,11 @@ export class ProductSchema {
     required: true,
     minimum: 0,
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   basePrice: number
 
   @ApiProperty({
@@ -90,8 +95,8 @@ export class ProductSchema {
     minimum: 0,
   })
   @IsOptional()
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: VALIDATION_MESSAGES.INVALID_INTEGER })
+  @Min(0, { message: VALIDATION_MESSAGES.MIN_VALUE(0) })
   availableQuantity?: number
 
   @ApiProperty({

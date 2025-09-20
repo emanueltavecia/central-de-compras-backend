@@ -21,3 +21,7 @@ export interface ValidationError {
   message: string
   value?: any
 }
+
+export type Enum =
+  | readonly (string | number)[]
+  | Record<string, string | number>

@@ -7,6 +7,7 @@ import {
   Min,
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
+import { VALIDATION_MESSAGES } from '../utils'
 
 export class OrderItemSchema {
   @ApiProperty({
@@ -35,8 +36,8 @@ export class OrderItemSchema {
     format: 'uuid',
     required: true,
   })
-  @IsUUID()
-  @IsNotEmpty()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   productId: string
 
   @ApiProperty({
@@ -54,8 +55,11 @@ export class OrderItemSchema {
     type: 'number',
     required: true,
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   unitPrice: number
 
   @ApiProperty({
@@ -64,8 +68,11 @@ export class OrderItemSchema {
     type: 'number',
     required: true,
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   unitPriceAdjusted: number
 
   @ApiProperty({
@@ -75,8 +82,8 @@ export class OrderItemSchema {
     required: true,
     minimum: 1,
   })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: VALIDATION_MESSAGES.INVALID_INTEGER })
+  @Min(1, { message: VALIDATION_MESSAGES.MIN_QUANTITY(1) })
   quantity: number
 
   @ApiProperty({
@@ -85,8 +92,11 @@ export class OrderItemSchema {
     type: 'number',
     required: true,
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   totalPrice: number
 
   @ApiProperty({
