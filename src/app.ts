@@ -5,7 +5,7 @@ import swaggerUi from 'swagger-ui-express'
 
 import { config } from '@/config'
 import { registerRoutes, swaggerPaths } from '@/routes'
-import { generateSwaggerSpec } from '@/decorators/route.decorator'
+import { generateSwaggerSpec } from '@/decorators'
 
 export function createApp(): Express {
   const app: Express = express()

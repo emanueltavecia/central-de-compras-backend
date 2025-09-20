@@ -1,4 +1,4 @@
-import { ApiProperty } from '../decorators/api-property.decorator'
+import { ApiProperty } from '@/decorators'
 
 export enum Environment {
   DEVELOPMENT = 'development',

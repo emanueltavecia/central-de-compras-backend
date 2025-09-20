@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { ApiProperty } from '../decorators/api-property.decorator'
+import { ApiProperty } from '@/decorators'
 import { PermissionSchema } from './permission.schema'
 
 export class RoleSchema {

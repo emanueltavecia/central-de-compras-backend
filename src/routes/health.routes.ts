@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import type { Router as ExpressRouter } from 'express'
-import { HealthController } from '@/controllers/health.controller'
-import { registerController } from '@/decorators/route.decorator'
+import { HealthController } from '@/controllers'
+import { registerController } from '@/decorators'
 
 export const healthRoutes: ExpressRouter = Router()
 

@@ -1,5 +1,5 @@
 import { ValidationError } from '@/types'
-import { ApiProperty } from '../decorators/api-property.decorator'
+import { ApiProperty } from '@/decorators'
 
 export class ErrorResponseSchema {
   @ApiProperty({

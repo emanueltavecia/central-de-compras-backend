@@ -6,8 +6,8 @@ import {
   IsUUID,
   Min,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { VALIDATION_MESSAGES } from '../utils'
+import { ApiProperty } from '@/decorators'
+import { VALIDATION_MESSAGES } from '@/utils'
 
 export class OrderItemSchema {
   @ApiProperty({

@@ -2,7 +2,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator'
-import { VALIDATION_MESSAGES, REGEX } from '../consts'
+import { VALIDATION_MESSAGES, REGEX } from '@/utils'
 
 @ValidatorConstraint({ name: 'isPostalCode', async: false })
 export class IsPostalCodeValidator implements ValidatorConstraintInterface {

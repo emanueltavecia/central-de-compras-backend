@@ -13,8 +13,8 @@ import {
   ArrayMinSize,
   IsNumber,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { CampaignType, CampaignScope } from '../enums'
+import { ApiProperty } from '@/decorators'
+import { CampaignType, CampaignScope } from '@/enums'
 import { IsEndDateAfterStartDateValidator, VALIDATION_MESSAGES } from '@/utils'
 
 export class CampaignSchema {

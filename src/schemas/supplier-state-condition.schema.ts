@@ -10,7 +10,7 @@ import {
   Max,
   Min,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
+import { ApiProperty } from '@/decorators'
 import { VALIDATION_MESSAGES } from '@/utils'
 
 export class SupplierStateConditionSchema {

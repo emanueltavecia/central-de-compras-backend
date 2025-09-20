@@ -5,8 +5,8 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { OrderStatus } from '../enums'
+import { ApiProperty } from '@/decorators'
+import { OrderStatus } from '@/enums'
 import { VALIDATION_MESSAGES } from '@/utils'
 
 export class OrderStatusHistorySchema {

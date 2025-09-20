@@ -8,8 +8,8 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { Type } from 'class-transformer'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { OrderStatus } from '../enums'
+import { ApiProperty } from '@/decorators'
+import { OrderStatus } from '@/enums'
 import { OrderItemSchema } from './order-item.schema'
 import { VALIDATION_MESSAGES } from '@/utils'
 

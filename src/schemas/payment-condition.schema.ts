@@ -7,8 +7,8 @@ import {
   IsUUID,
   Min,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { PaymentMethod } from '../enums'
+import { ApiProperty } from '@/decorators'
+import { PaymentMethod } from '@/enums'
 import { VALIDATION_MESSAGES } from '@/utils'
 
 export class PaymentConditionSchema {

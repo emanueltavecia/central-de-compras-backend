@@ -1,6 +1,10 @@
-import { ApiController, ApiRoute } from '@/decorators/route.decorator'
-import { Environment, ErrorResponseSchema, HealthDataSchema } from '@/schemas'
-import { SuccessResponseSchema } from '@/schemas/success.schema'
+import { ApiController, ApiRoute } from '@/decorators'
+import {
+  Environment,
+  ErrorResponseSchema,
+  HealthDataSchema,
+  SuccessResponseSchema,
+} from '@/schemas'
 
 @ApiController('/health', ['Health'])
 export class HealthController {

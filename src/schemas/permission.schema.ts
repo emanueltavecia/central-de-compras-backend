@@ -1,5 +1,5 @@
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { PermissionName } from '../enums'
+import { ApiProperty } from '@/decorators'
+import { PermissionName } from '@/enums'
 
 export class PermissionSchema {
   @ApiProperty({

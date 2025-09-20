@@ -7,7 +7,7 @@ import {
   Length,
   Validate,
 } from 'class-validator'
-import { ApiProperty } from '@/decorators/api-property.decorator'
+import { ApiProperty } from '@/decorators'
 import { VALIDATION_MESSAGES, IsPostalCodeValidator } from '@/utils'
 
 export class AddressSchema {
