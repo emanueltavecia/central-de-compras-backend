@@ -12,6 +12,8 @@ export interface JSONSchemaProperty {
   pattern?: string
   properties?: Record<string, JSONSchemaProperty>
   items?: JSONSchemaProperty & { required?: string[] }
+  readOnly?: boolean
+  writeOnly?: boolean
 }
 
 export interface SwaggerSchemaProperty extends JSONSchemaProperty {

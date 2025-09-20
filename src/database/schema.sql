@@ -8,9 +8,18 @@ CREATE TYPE campaign_type AS ENUM ('cashback','gift');
 CREATE TYPE campaign_scope AS ENUM ('all','category','product');
 CREATE TYPE user_account_status AS ENUM ('active','inactive','suspended');
 CREATE TYPE permission_name AS ENUM (
-  'manage_stores','manage_suppliers','manage_products','view_orders','manage_orders',
-  'manage_campaigns','manage_conditions','manage_users','view_reports'
+  'manage_users',        -- admin
+  'manage_stores',       -- admin
+  'manage_suppliers',    -- admin
+  'view_suppliers',      -- admin/loja
+  'manage_products',     -- admin/fornecedor
+  'view_orders',         -- admin/loja/fornecedor
+  'create_orders',       -- admin/loja
+  'manage_orders',       -- admin/fornecedor
+  'manage_campaigns',    -- admin/fornecedor
+  'manage_conditions'    -- admin/fornecedor
 );
+CREATE TYPE order_payment_method AS ENUM ('credit_card', 'boleto', 'pix');
 
 -- TABLES
 CREATE TABLE roles (
@@ -35,13 +44,12 @@ CREATE TABLE role_permissions (
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
+  password TEXT NOT NULL,
   full_name TEXT,
   phone TEXT,
   role_id UUID NOT NULL REFERENCES roles(id),
   organization_id UUID, -- FK adicionada depois
   status user_account_status DEFAULT 'active',
-  last_login TIMESTAMP WITH TIME ZONE,
   created_by UUID, -- FK adicionada depois
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -70,8 +78,6 @@ CREATE TABLE addresses (
   city TEXT,
   state CHAR(2),
   postal_code TEXT,
-  latitude NUMERIC(10,7),
-  longitude NUMERIC(10,7),
   is_primary BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -99,7 +105,6 @@ CREATE TABLE products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   supplier_org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   category_id UUID REFERENCES categories(id),
-  sku TEXT,
   name TEXT NOT NULL,
   description TEXT,
   unit TEXT,
@@ -115,7 +120,7 @@ CREATE TABLE payment_conditions (
   supplier_org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   name TEXT,
   payment_term_days INTEGER DEFAULT 0,
-  payment_method TEXT,
+  payment_method order_payment_method NOT NULL,
   notes TEXT,
   active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -159,12 +164,10 @@ CREATE TABLE campaign_products (
 
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  code TEXT UNIQUE,
   store_org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   supplier_org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   status order_status NOT NULL DEFAULT 'placed',
   placed_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  expected_delivery_date DATE,
   shipping_address_id UUID REFERENCES addresses(id),
   subtotal_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
   shipping_cost NUMERIC(12,2) DEFAULT 0,
@@ -182,7 +185,6 @@ CREATE TABLE order_items (
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id),
   product_name_snapshot TEXT NOT NULL,
-  product_sku_snapshot TEXT,
   unit_price NUMERIC(12,2) NOT NULL,
   unit_price_adjusted NUMERIC(12,2) NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
@@ -222,7 +224,6 @@ ALTER TABLE order_status_history
 CREATE INDEX idx_addresses_org ON addresses(organization_id);
 CREATE INDEX idx_addresses_state ON addresses(state);
 CREATE INDEX idx_products_supplier ON products(supplier_org_id);
-CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_payment_conditions_supplier ON payment_conditions(supplier_org_id);
 CREATE INDEX idx_supplier_state_conditions_supplier_state ON supplier_state_conditions(supplier_org_id, state);
 CREATE INDEX idx_campaigns_supplier ON campaigns(supplier_org_id);

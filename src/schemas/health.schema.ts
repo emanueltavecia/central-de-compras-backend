@@ -23,7 +23,7 @@ export class HealthDataSchema {
 
   @ApiProperty({
     description: 'Ambiente de execução',
-    example: 'development',
+    example: Environment.DEVELOPMENT,
     type: 'string',
     enum: Environment,
   })

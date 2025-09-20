@@ -26,6 +26,7 @@ export interface ApiPropertyOptions {
   pattern?: string
   schema?: SchemaType
   readOnly?: boolean
+  writeOnly?: boolean
 }
 
 export interface ApiResponseOptions {

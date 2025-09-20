@@ -1,7 +1,60 @@
 import { Request, Response, NextFunction } from 'express'
 import { validate, ValidationError } from 'class-validator'
 import { plainToClass } from 'class-transformer'
-import { ErrorResponseSchema, ValidationErrorResponseSchema } from '@/models'
+import { ErrorResponseSchema, ValidationErrorResponseSchema } from '@/schemas'
+
+function formatValidationErrors(errors: ValidationError[]): any[] {
+  const formattedErrors: any[] = []
+
+  function processError(error: ValidationError, parentPath = '') {
+    const fieldPath = parentPath
+      ? `${parentPath}.${error.property}`
+      : error.property
+
+    if (error.constraints) {
+      const message = Object.values(error.constraints)[0] || 'Erro de validação'
+
+      if (parentPath && /\.\d+$/.test(parentPath)) {
+        const arrayPath = parentPath.replace(/\.\d+$/, '')
+        const index = parentPath.match(/\.(\d+)$/)?.[1]
+
+        let arrayError = formattedErrors.find((e) => e.field === arrayPath)
+        if (!arrayError) {
+          arrayError = {
+            field: arrayPath,
+            message: 'Erro de validação em array',
+            errors: {},
+          }
+          formattedErrors.push(arrayError)
+        }
+
+        if (!arrayError.errors[index!]) {
+          arrayError.errors[index!] = []
+        }
+        arrayError.errors[index!].push({
+          field: error.property,
+          message,
+          value: error.value,
+        })
+      } else {
+        formattedErrors.push({
+          field: fieldPath,
+          message,
+          value: error.value,
+        })
+      }
+    }
+
+    if (error.children && error.children.length > 0) {
+      error.children.forEach((child) => {
+        processError(child, fieldPath)
+      })
+    }
+  }
+
+  errors.forEach((error) => processError(error))
+  return formattedErrors
+}
 
 export function validationMiddleware<T>(type: new () => T) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -10,17 +63,7 @@ export function validationMiddleware<T>(type: new () => T) {
       const errors = await validate(dto as object)
 
       if (errors.length > 0) {
-        const validationErrors = errors.map((error: ValidationError) => {
-          const message = error.constraints
-            ? Object.values(error.constraints)[0]
-            : 'Erro de validação'
-
-          return {
-            field: error.property,
-            message,
-            value: error.value,
-          }
-        })
+        const validationErrors = formatValidationErrors(errors)
 
         const response: ValidationErrorResponseSchema = {
           success: false,
