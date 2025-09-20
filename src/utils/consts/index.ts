@@ -1,1 +1,1 @@
-export * from './validation-messages.consts'
+export * from './validation-messages.const'

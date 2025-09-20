@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import type { Router as ExpressRouter } from 'express'
-import { createSchemaFromClass } from '@/utils/schema.utils'
-import { validationMiddleware } from '@/middleware/validation.middleware'
+import { createSchemaFromClass } from '@/utils'
+import { validationMiddleware } from '@/middleware'
 
 export function ApiRoute(config: {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch'
