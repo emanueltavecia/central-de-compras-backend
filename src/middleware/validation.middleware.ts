@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { validate, ValidationError } from 'class-validator'
 import { plainToClass } from 'class-transformer'
 import { ErrorResponseSchema, ValidationErrorResponseSchema } from '@/schemas'
+import { REGEX } from '@/utils'
 
 function formatValidationErrors(errors: ValidationError[]): any[] {
   const formattedErrors: any[] = []
@@ -14,9 +15,9 @@ function formatValidationErrors(errors: ValidationError[]): any[] {
     if (error.constraints) {
       const message = Object.values(error.constraints)[0] || 'Erro de validação'
 
-      if (parentPath && /\.\d+$/.test(parentPath)) {
-        const arrayPath = parentPath.replace(/\.\d+$/, '')
-        const index = parentPath.match(/\.(\d+)$/)?.[1]
+      if (parentPath && REGEX.ARRAY_INDEX_PATH.test(parentPath)) {
+        const arrayPath = parentPath.replace(REGEX.ARRAY_INDEX_PATH, '')
+        const index = parentPath.match(REGEX.CAPTURE_ARRAY_INDEX)?.[1]
 
         let arrayError = formattedErrors.find((e) => e.field === arrayPath)
         if (!arrayError) {

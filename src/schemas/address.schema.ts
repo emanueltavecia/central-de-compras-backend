@@ -5,9 +5,10 @@ import {
   IsString,
   IsUUID,
   Length,
+  Validate,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { VALIDATION_MESSAGES } from '../utils'
+import { ApiProperty } from '@/decorators/api-property.decorator'
+import { VALIDATION_MESSAGES, IsPostalCodeValidator } from '@/utils'
 
 export class AddressSchema {
   @ApiProperty({
@@ -94,12 +95,13 @@ export class AddressSchema {
 
   @ApiProperty({
     description: 'CEP',
-    example: '88000-000',
+    example: '88000000',
     type: 'string',
     required: false,
   })
   @IsOptional()
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Validate(IsPostalCodeValidator)
   postalCode?: string
 
   @ApiProperty({

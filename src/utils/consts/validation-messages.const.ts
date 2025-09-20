@@ -12,6 +12,7 @@ export const VALIDATION_MESSAGES = {
   INVALID_PHONE: 'Formato de telefone inválido.',
   INVALID_CPF: 'Formato de CPF inválido.',
   INVALID_CNPJ: 'Formato de CNPJ inválido.',
+  INVALID_CPF_CNPJ: 'Formato de CPF ou CNPJ inválido.',
   INVALID_URL: 'Formato de URL inválido.',
   INVALID_NUMBER: 'Deve ser um número válido.',
   INVALID_INTEGER: 'Deve ser um número inteiro.',

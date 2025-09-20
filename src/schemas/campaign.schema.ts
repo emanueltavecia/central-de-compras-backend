@@ -10,32 +10,12 @@ import {
   Min,
   Validate,
   ValidateIf,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
-  ValidationArguments,
   ArrayMinSize,
   IsNumber,
 } from 'class-validator'
 import { ApiProperty } from '../decorators/api-property.decorator'
 import { CampaignType, CampaignScope } from '../enums'
-import { VALIDATION_MESSAGES } from '@/utils'
-
-@ValidatorConstraint({ name: 'isEndDateAfterStartDate', async: false })
-class IsEndDateAfterStartDateConstraint
-  implements ValidatorConstraintInterface
-{
-  validate(endAt: string, args: ValidationArguments) {
-    const { startAt } = args.object as any
-    if (!startAt || !endAt) {
-      return true
-    }
-    return new Date(endAt) > new Date(startAt)
-  }
-
-  defaultMessage() {
-    return VALIDATION_MESSAGES.INVALID_DATE_RANGE
-  }
-}
+import { IsEndDateAfterStartDateValidator, VALIDATION_MESSAGES } from '@/utils'
 
 export class CampaignSchema {
   @ApiProperty({
@@ -195,7 +175,7 @@ export class CampaignSchema {
   })
   @IsOptional()
   @IsDateString({}, { message: VALIDATION_MESSAGES.INVALID_DATE })
-  @Validate(IsEndDateAfterStartDateConstraint)
+  @Validate(IsEndDateAfterStartDateValidator)
   endAt?: string
 
   @ApiProperty({

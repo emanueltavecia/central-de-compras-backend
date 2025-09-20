@@ -1,7 +1,18 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsUrl } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { OrgType } from '../enums'
-import { VALIDATION_MESSAGES } from '../utils'
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Validate,
+} from 'class-validator'
+import { ApiProperty } from '@/decorators'
+import { OrgType } from '@/enums'
+import {
+  IsCpfCnpjValidator,
+  IsPhoneValidator,
+  VALIDATION_MESSAGES,
+} from '@/utils'
 
 export class OrganizationSchema {
   @ApiProperty({
@@ -45,22 +56,24 @@ export class OrganizationSchema {
 
   @ApiProperty({
     description: 'CNPJ ou CPF',
-    example: '12.345.678/0001-90',
+    example: '12345678000195',
     type: 'string',
     required: false,
   })
   @IsOptional()
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Validate(IsCpfCnpjValidator)
   taxId?: string
 
   @ApiProperty({
     description: 'Telefone da organização',
-    example: '(48) 3333-3333',
+    example: '4833333333',
     type: 'string',
     required: false,
   })
   @IsOptional()
-  @IsString({ message: VALIDATION_MESSAGES.INVALID_PHONE })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Validate(IsPhoneValidator)
   phone?: string
 
   @ApiProperty({

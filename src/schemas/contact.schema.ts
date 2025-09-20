@@ -5,9 +5,10 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Validate,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { VALIDATION_MESSAGES } from '@/utils'
+import { ApiProperty } from '@/decorators'
+import { VALIDATION_MESSAGES, IsPhoneValidator } from '@/utils'
 
 export class ContactSchema {
   @ApiProperty({
@@ -53,12 +54,13 @@ export class ContactSchema {
 
   @ApiProperty({
     description: 'Telefone do contato',
-    example: '(48) 99999-9999',
+    example: '48999999999',
     type: 'string',
     required: false,
   })
   @IsOptional()
-  @IsString({ message: VALIDATION_MESSAGES.INVALID_PHONE })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Validate(IsPhoneValidator)
   phone?: string
 
   @ApiProperty({

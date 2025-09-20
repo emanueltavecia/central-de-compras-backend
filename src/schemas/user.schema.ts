@@ -5,10 +5,11 @@ import {
   IsString,
   IsStrongPassword,
   IsUUID,
+  Validate,
 } from 'class-validator'
-import { ApiProperty } from '../decorators/api-property.decorator'
-import { UserAccountStatus } from '../enums'
-import { VALIDATION_MESSAGES } from '../utils'
+import { ApiProperty } from '@/decorators'
+import { UserAccountStatus } from '@/enums'
+import { IsPhoneValidator, VALIDATION_MESSAGES } from '@/utils'
 
 export class UserSchema {
   @ApiProperty({
@@ -66,12 +67,13 @@ export class UserSchema {
 
   @ApiProperty({
     description: 'Telefone do usuário',
-    example: '(48) 99999-9999',
+    example: '48999999999',
     type: 'string',
     required: false,
   })
   @IsOptional()
-  @IsString({ message: VALIDATION_MESSAGES.INVALID_PHONE })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Validate(IsPhoneValidator)
   phone?: string
 
   @ApiProperty({
