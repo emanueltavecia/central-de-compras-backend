@@ -10,6 +10,7 @@ import {
 import { ApiProperty } from '@/decorators'
 import { UserAccountStatus } from '@/enums'
 import { IsPhoneValidator, VALIDATION_MESSAGES } from '@/utils'
+import { RoleSchema } from './role.schema'
 
 export class UserSchema {
   @ApiProperty({
@@ -82,10 +83,20 @@ export class UserSchema {
     type: 'string',
     format: 'uuid',
     required: true,
+    writeOnly: true,
   })
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   roleId: string
+
+  @ApiProperty({
+    description: 'Role do usuário',
+    type: 'object',
+    schema: RoleSchema,
+    required: true,
+    readOnly: true,
+  })
+  role: RoleSchema
 
   @ApiProperty({
     description: 'ID da organização do usuário',
