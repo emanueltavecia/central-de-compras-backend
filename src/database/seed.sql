@@ -36,7 +36,7 @@ INSERT INTO organizations (type, legal_name, trade_name, tax_id, phone, email, a
   ('supplier', 'Fornecedor Exemplo LTDA', 'Fornecedor Exemplo', '11122233000102', '48777777777', 'contato@fornecedorexemplo.com', TRUE);
 
 -- USUÁRIOS DE EXEMPLO
--- Senha para todos: Admin123!
+-- Senha para todos: Admin@123
 
 INSERT INTO users (email, password, full_name, phone, role_id, organization_id, status) VALUES
   (
@@ -45,7 +45,7 @@ INSERT INTO users (email, password, full_name, phone, role_id, organization_id, 
     'Administrador Central',
     '48999999999',
     (SELECT id FROM roles WHERE name = 'admin'),
-    (SELECT id FROM organizations WHERE tax_id = '12345678000100'),
+    null,
     'active'
   ),
   (
