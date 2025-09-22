@@ -48,7 +48,7 @@ CREATE TABLE users (
   full_name TEXT,
   phone TEXT,
   role_id UUID NOT NULL REFERENCES roles(id),
-  organization_id UUID, -- FK adicionada depois
+  organization_id UUID NOT NULL, -- FK adicionada depois
   status user_account_status DEFAULT 'active',
   created_by UUID, -- FK adicionada depois
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()

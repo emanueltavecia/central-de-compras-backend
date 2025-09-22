@@ -60,7 +60,7 @@ function formatValidationErrors(errors: ValidationError[]): any[] {
 export function validationMiddleware<T>(type: new () => T) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dto = plainToClass(type, req.body)
+      const dto = plainToClass(type, req.body || {})
       const errors = await validate(dto as object)
 
       if (errors.length > 0) {

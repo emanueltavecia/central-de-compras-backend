@@ -1,7 +1,12 @@
 import { Request, Response } from 'express'
 import type { Router as ExpressRouter } from 'express'
 import { createSchemaFromClass } from '@/utils'
-import { validationMiddleware } from '@/middlewares'
+import {
+  validationMiddleware,
+  authMiddleware,
+  requirePermission,
+} from '@/middlewares'
+import { PermissionName } from '@/enums'
 
 export function ApiRoute(config: {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch'
@@ -10,6 +15,8 @@ export function ApiRoute(config: {
   tags?: string[]
   body?: new () => any
   responses?: Record<number, new () => any>
+  permissions?: PermissionName[]
+  isPublic?: boolean
 }) {
   return function (
     target: any,
@@ -55,6 +62,20 @@ export function registerController(
     ) => void
 
     const middlewares = []
+
+    const isPublic = route.isPublic ?? false
+    const permissions = route.permissions ?? []
+
+    if (!isPublic) {
+      middlewares.push(authMiddleware)
+
+      if (permissions.length > 0) {
+        permissions.forEach((permission: PermissionName) => {
+          middlewares.push(requirePermission(permission))
+        })
+      }
+    }
+
     if (route.body) {
       middlewares.push(validationMiddleware(route.body))
     }

@@ -6,7 +6,7 @@ export function createErrorResponse(
 ): ApiResponse {
   return {
     success: false,
-    message,
-    error,
+    message: message || 'Ocorreu um erro interno do servidor',
+    error: error || 'INTERNAL_SERVER_ERROR',
   }
 }

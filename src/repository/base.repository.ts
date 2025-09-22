@@ -1,5 +1,5 @@
 import { database, PoolClient } from '@/database'
-import { camelizeKeys } from 'humps'
+import humps from 'humps'
 
 export abstract class BaseRepository {
   protected async executeQuery<T = any>(
@@ -8,7 +8,7 @@ export abstract class BaseRepository {
   ): Promise<T[]> {
     try {
       const result = await database.query(query, params)
-      return camelizeKeys(result.rows) as T[]
+      return humps.camelizeKeys(result.rows) as T[]
     } catch (error) {
       console.error('Database query error:', error)
       throw new Error(`Database operation failed: ${error}`)
