@@ -1,7 +1,7 @@
-import { database, PoolClient } from '@/repository'
+import { database, PoolClient } from '@/database'
 import { camelizeKeys } from 'humps'
 
-export abstract class BaseService {
+export abstract class BaseRepository {
   protected async executeQuery<T = any>(
     query: string,
     params?: any[],

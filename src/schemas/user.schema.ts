@@ -54,7 +54,7 @@ export class UserSchema {
       message: VALIDATION_MESSAGES.INVALID_STRONG_PASSWORD,
     },
   )
-  password: string
+  password?: string
 
   @ApiProperty({
     description: 'Nome completo do usuário',

@@ -21,6 +21,7 @@
   "license": "Veja licença em LICENSE.md",
   "packageManager": "pnpm@10.12.4",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cors": "^2.8.5",
@@ -29,6 +30,7 @@
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "humps": "^2.0.1",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "routing-controllers": "^0.11.3",
@@ -36,9 +38,11 @@
   },
   "devDependencies": {
     "@emanueltavecia/eslint-config": "1.0.5",
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/humps": "^2.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.1",
     "@types/pg": "^8.15.5",
     "@types/swagger-ui-express": "^4.1.8",

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv'
+import { SignOptions } from 'jsonwebtoken'
 
 dotenv.config()
 
@@ -25,6 +26,11 @@ export const config = {
       process.env.NODE_ENV === 'production'
         ? { rejectUnauthorized: false }
         : false,
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET || 'JWT_SECRET',
+    expiresIn: (process.env.JWT_EXPIRES_IN ||
+      '24h') as SignOptions['expiresIn'],
   },
   swagger: {
     definition: {
