@@ -1,15 +1,15 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { UserRepository } from '@/repository'
+import { AuthRepository } from '@/repository'
 import { UserSchema, LoginSchema, AuthResponseSchema } from '@/schemas'
 import { config } from '@/config'
 import { HttpError } from '@/utils'
 
 export class AuthService {
-  private userRepository: UserRepository
+  private userRepository: AuthRepository
 
   constructor() {
-    this.userRepository = new UserRepository()
+    this.userRepository = new AuthRepository()
   }
 
   async login(loginData: LoginSchema): Promise<AuthResponseSchema> {
@@ -73,14 +73,18 @@ export class AuthService {
       throw new HttpError('Role especificada não existe', 400, 'BAD_REQUEST')
     }
 
-    const organizationExists =
-      await this.userRepository.checkOrganizationExists(userData.organizationId)
-    if (!organizationExists) {
-      throw new HttpError(
-        'Organização especificada não existe ou está inativa',
-        400,
-        'BAD_REQUEST',
-      )
+    if (userData.organizationId) {
+      const organizationExists =
+        await this.userRepository.checkOrganizationExists(
+          userData.organizationId,
+        )
+      if (!organizationExists) {
+        throw new HttpError(
+          'Organização especificada não existe ou está inativa',
+          400,
+          'BAD_REQUEST',
+        )
+      }
     }
 
     const hashedPassword = await bcrypt.hash(userData.password!, 12)

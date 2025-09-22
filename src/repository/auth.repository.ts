@@ -1,7 +1,7 @@
 import { BaseRepository } from './base.repository'
 import { UserSchema } from '@/schemas'
 
-export class UserRepository extends BaseRepository {
+export class AuthRepository extends BaseRepository {
   async findByEmail(email: string): Promise<UserSchema | null> {
     const query = `
       SELECT 
