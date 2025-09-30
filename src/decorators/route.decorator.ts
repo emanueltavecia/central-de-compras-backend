@@ -3,6 +3,7 @@ import type { Router as ExpressRouter } from 'express'
 import { createSchemaFromClass } from '@/utils'
 import {
   validationMiddleware,
+  queryValidationMiddleware,
   authMiddleware,
   requirePermission,
 } from '@/middlewares'
@@ -14,6 +15,7 @@ export function ApiRoute(config: {
   summary: string
   tags?: string[]
   body?: new () => any
+  query?: new () => any
   responses?: Record<number, new () => any>
   permissions?: PermissionName[]
   isPublic?: boolean
@@ -78,6 +80,10 @@ export function registerController(
 
     if (route.body) {
       middlewares.push(validationMiddleware(route.body))
+    }
+
+    if (route.query) {
+      middlewares.push(queryValidationMiddleware(route.query))
     }
 
     routerMethod.call(

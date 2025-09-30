@@ -86,3 +86,33 @@ export function validationMiddleware<T>(type: new () => T) {
     }
   }
 }
+
+export function queryValidationMiddleware<T>(type: new () => T) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = plainToClass(type, req.query || {})
+      const errors = await validate(dto as object)
+
+      if (errors.length > 0) {
+        const validationErrors = formatValidationErrors(errors)
+
+        const response: ValidationErrorResponseSchema = {
+          success: false,
+          message: 'Parâmetros de consulta inválidos',
+          error: { validationErrors },
+        }
+        return res.status(400).json(response)
+      }
+
+      req.query = dto as any
+      next()
+    } catch (error) {
+      const response: ErrorResponseSchema = {
+        success: false,
+        message: 'Erro interno do servidor durante a validação',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      }
+      res.status(500).json(response)
+    }
+  }
+}
