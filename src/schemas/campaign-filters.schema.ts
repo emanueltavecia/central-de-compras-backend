@@ -27,7 +27,7 @@ export class CampaignFiltersSchema {
   supplierOrgId?: string
 
   @ApiProperty({
-    description: 'Nome da campanha (busca parcial)',
+    description: 'Nome da campanha',
     example: 'Promoção',
     type: 'string',
     required: false,
