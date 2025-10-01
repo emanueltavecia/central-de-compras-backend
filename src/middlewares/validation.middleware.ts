@@ -104,7 +104,38 @@ export function queryValidationMiddleware<T>(type: new () => T) {
         return res.status(400).json(response)
       }
 
-      req.query = dto as any
+      req.validatedQuery = dto
+      next()
+    } catch (error) {
+      const response: ErrorResponseSchema = {
+        success: false,
+        message: 'Erro interno do servidor durante a validação',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      }
+      res.status(500).json(response)
+    }
+  }
+}
+
+export function paramsValidationMiddleware<T>(type: new () => T) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = plainToClass(type, req.params || {})
+      const errors = await validate(dto as object)
+
+      if (errors.length > 0) {
+        const validationErrors = formatValidationErrors(errors)
+
+        const response: ValidationErrorResponseSchema = {
+          success: false,
+          message: 'Parâmetros de rota inválidos',
+          error: { validationErrors },
+        }
+        return res.status(400).json(response)
+      }
+
+      req.validatedParams = dto
+      req.params = dto as any
       next()
     } catch (error) {
       const response: ErrorResponseSchema = {

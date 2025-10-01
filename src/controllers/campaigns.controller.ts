@@ -8,6 +8,7 @@ import {
   CampaignStatusSchema,
   ErrorResponseSchema,
   SuccessResponseSchema,
+  IdParamSchema,
 } from '@/schemas'
 
 @ApiController('/campaigns', ['Campaigns'])
@@ -55,12 +56,14 @@ export class CampaignsController {
     method: 'get',
     path: '/:id',
     summary: 'Buscar campanha por ID',
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: CampaignSchema,
         dataDescription: 'Dados da campanha',
         message: 'Campanha encontrada',
       }),
+      400: ErrorResponseSchema,
       404: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
@@ -98,7 +101,7 @@ export class CampaignsController {
   })
   async getAllCampaigns(req: Request, res: Response) {
     try {
-      const filters = req.query as unknown as CampaignFiltersSchema
+      const filters = req.query as CampaignFiltersSchema
 
       const campaigns = await this.campaignsService.getAllCampaigns(filters)
 
@@ -118,6 +121,7 @@ export class CampaignsController {
     method: 'put',
     path: '/:id',
     summary: 'Atualizar campanha',
+    params: IdParamSchema,
     body: CampaignSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -158,6 +162,7 @@ export class CampaignsController {
     method: 'patch',
     path: '/:id/status',
     summary: 'Alterar status ativo da campanha',
+    params: IdParamSchema,
     body: CampaignStatusSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -201,11 +206,13 @@ export class CampaignsController {
     method: 'delete',
     path: '/:id',
     summary: 'Excluir campanha',
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         dataDescription: 'Confirmação de exclusão',
         message: 'Campanha excluída com sucesso',
       }),
+      400: ErrorResponseSchema,
       404: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },

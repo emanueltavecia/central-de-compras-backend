@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+export * from './validated-request'
 
 export interface ApiResponse<T = any> {
   success: boolean
