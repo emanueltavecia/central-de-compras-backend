@@ -48,7 +48,7 @@ CREATE TABLE users (
   full_name TEXT,
   phone TEXT,
   role_id UUID NOT NULL REFERENCES roles(id),
-  organization_id UUID NOT NULL, -- FK adicionada depois
+  organization_id UUID, -- FK adicionada depois
   status user_account_status DEFAULT 'active',
   created_by UUID, -- FK adicionada depois
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -205,7 +205,7 @@ CREATE TABLE order_status_history (
 
 -- FOREIGN KEYS ADDED AFTER TO BREAK CYCLES
 ALTER TABLE users
-  ADD CONSTRAINT fk_users_org FOREIGN KEY (organization_id) REFERENCES organizations(id),
+  ADD CONSTRAINT fk_users_org FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
   ADD CONSTRAINT fk_users_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE organizations

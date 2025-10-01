@@ -105,9 +105,9 @@ export class UserSchema {
     format: 'uuid',
     required: false,
   })
-  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsOptional()
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
-  organizationId: string
+  organizationId?: string
 
   @ApiProperty({
     description: 'Status da conta do usuário',
