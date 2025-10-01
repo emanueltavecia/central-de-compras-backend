@@ -1,4 +1,3 @@
-
 import { Express } from 'express'
 import { healthRoutes, healthSwaggerPaths } from './health.routes'
 import { authRoutes, authSwaggerPaths } from './auth.routes'

@@ -10,6 +10,7 @@ import {
 import { createSuccessResponse, createErrorResponse } from '@/utils'
 import { Request, Response } from 'express'
 import { ProductService } from '@/services'
+import { AuthenticatedRequest } from '@/middlewares'
 
 @ApiController('/products', ['Product'])
 export class ProductController {
@@ -34,10 +35,16 @@ export class ProductController {
       500: ErrorResponseSchema,
     },
   })
-  async createProduct(productData: ProductSchema, req: Request, res: Response) {
+  async createProduct(
+    productData: ProductSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
-      const createdProduct =
-        await this.productService.createProduct(productData)
+      const createdProduct = await this.productService.createProduct({
+        ...productData,
+        createdBy: req.user?.id,
+      })
 
       return res
         .status(201)
