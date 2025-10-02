@@ -28,17 +28,18 @@ export async function createApp(): Promise<Express> {
   const swaggerSpec = generateSwaggerSpec(swaggerPaths)
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
-  app.use((error: Error, request: Request, response: Response) => {
-    console.error(error)
+  app.use((error: Error, request: Request, response: Response, next: Function) => {
+      console.error(error)
 
-    const statusCode = response.statusCode >= 400 ? response.statusCode : 500
+      const statusCode = response.statusCode >= 400 ? response.statusCode : 500
 
-    response.status(statusCode).json({
-      success: false,
-      message: error.message || 'Internal Server Error',
-      error: error.name,
-    })
-  })
+      response.status(statusCode).json({
+        success: false,
+        message: error.message || 'Internal Server Error',
+        error: error.name,
+      })
+    },
+  )
 
   return app
 }
