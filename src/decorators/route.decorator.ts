@@ -3,10 +3,14 @@ import type { Router as ExpressRouter } from 'express'
 import { createSchemaFromClass } from '@/utils'
 import {
   validationMiddleware,
+  queryValidationMiddleware,
+  paramsValidationMiddleware,
   authMiddleware,
   requirePermission,
 } from '@/middlewares'
 import { PermissionName } from '@/enums'
+import { plainToClass } from 'class-transformer'
+import { isUUID } from 'class-validator'
 
 export function ApiRoute(config: {
   method: 'get' | 'post' | 'put' | 'delete' | 'patch'
@@ -14,6 +18,8 @@ export function ApiRoute(config: {
   summary: string
   tags?: string[]
   body?: new () => any
+  query?: new () => any
+  params?: new () => any
   responses?: Record<number, new () => any>
   permissions?: PermissionName[]
   isPublic?: boolean
@@ -80,6 +86,14 @@ export function registerController(
       middlewares.push(validationMiddleware(route.body))
     }
 
+    if (route.query) {
+      middlewares.push(queryValidationMiddleware(route.query))
+    }
+
+    if (route.params) {
+      middlewares.push(paramsValidationMiddleware(route.params))
+    }
+
     routerMethod.call(
       router,
       fullPath,
@@ -87,14 +101,19 @@ export function registerController(
       async (req: Request, res: Response) => {
         try {
           let result
+          const parsedQuery = plainToClass(route.query, req.query || {})
           if (
             route.method === 'post' ||
             route.method === 'put' ||
             route.method === 'patch'
           ) {
-            result = await handler(req.body, req, res)
+            result = await handler(
+              req.body,
+              { ...req, query: parsedQuery },
+              res,
+            )
           } else {
-            result = await handler(req, res)
+            result = await handler({ ...req, query: parsedQuery }, res)
           }
           if (result && !res.headersSent) {
             res.json(result)
@@ -112,13 +131,17 @@ export function registerController(
       },
     )
 
-    if (!swaggerPaths[fullPath]) {
-      swaggerPaths[fullPath] = {}
+    const swaggerPath = fullPath.replace(/:([^/]+)/g, '{$1}')
+
+    if (!swaggerPaths[swaggerPath]) {
+      swaggerPaths[swaggerPath] = {}
     }
 
-    swaggerPaths[fullPath][route.method] = {
+    swaggerPaths[swaggerPath][route.method] = {
       tags: route.tags || controllerMeta.tags || [],
       summary: route.summary,
+      security: !isPublic ? [{ bearerAuth: [] }] : [],
+      parameters: [],
       requestBody: route.body
         ? {
             required: true,
@@ -132,10 +155,71 @@ export function registerController(
       responses: {},
     }
 
+    if (route.params) {
+      const paramSchema = createSchemaFromClass(route.params, true)
+      if (paramSchema.properties) {
+        Object.entries(paramSchema.properties).forEach(
+          ([paramName, paramDef]: [string, any]) => {
+            const isUuid =
+              paramName === 'id' ||
+              (paramDef.description && paramDef.description.includes('UUID')) ||
+              (paramDef.example &&
+                typeof paramDef.example === 'string' &&
+                isUUID(paramDef.example))
+
+            swaggerPaths[swaggerPath][route.method].parameters.push({
+              name: paramName,
+              in: 'path',
+              required: true,
+              description: paramDef.description || `Parâmetro ${paramName}`,
+              schema: {
+                type: paramDef.type || 'string',
+                format: isUuid ? 'uuid' : paramDef.format,
+                example: paramDef.example,
+                pattern: isUuid
+                  ? '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+                  : paramDef.pattern,
+              },
+              example:
+                paramDef.example ||
+                (paramName === 'id'
+                  ? '123e4567-e89b-12d3-a456-426614174000'
+                  : undefined),
+            })
+          },
+        )
+      }
+    }
+
+    if (route.query) {
+      const querySchema = createSchemaFromClass(route.query, true)
+      if (querySchema.properties) {
+        Object.entries(querySchema.properties).forEach(
+          ([queryName, queryDef]: [string, any]) => {
+            const isRequired =
+              querySchema.required && querySchema.required.includes(queryName)
+            swaggerPaths[swaggerPath][route.method].parameters.push({
+              name: queryName,
+              in: 'query',
+              required: isRequired || false,
+              description:
+                queryDef.description || `Parâmetro de consulta ${queryName}`,
+              schema: {
+                type: queryDef.type || 'string',
+                format: queryDef.format,
+                example: queryDef.example,
+                enum: queryDef.enum,
+              },
+            })
+          },
+        )
+      }
+    }
+
     if (route.responses) {
       Object.entries(route.responses).forEach(([status, SchemaClass]) => {
         const schema = createSchemaFromClass(SchemaClass as new () => any, true)
-        swaggerPaths[fullPath][route.method].responses[status] = {
+        swaggerPaths[swaggerPath][route.method].responses[status] = {
           description:
             status === '200'
               ? 'Success'
@@ -170,6 +254,17 @@ export function generateSwaggerSpec(routers: { [key: string]: any }) {
       title: 'Interdisciplinar API',
       description: 'API documentation generated from decorators',
       version: '1.0.0',
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Digite o token JWT de autenticação',
+        },
+      },
+      schemas: {},
     },
     paths: allPaths,
   }
