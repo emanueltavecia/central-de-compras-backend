@@ -5,9 +5,6 @@ import {
   IsUUID,
   IsDateString,
   IsBoolean,
-  IsInt,
-  Min,
-  Max,
 } from 'class-validator'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@/decorators'

@@ -31,7 +31,7 @@ export class AuthService {
 
     const token = this.generateToken(user)
 
-    const { password: _, ...userWithoutPassword } = user
+    const { password: _password, ...userWithoutPassword } = user
 
     return {
       token,
@@ -97,7 +97,7 @@ export class AuthService {
       createdByUserId,
     )
 
-    const { password: _, ...userWithoutPassword } = newUser
+    const { password: _password, ...userWithoutPassword } = newUser
     return userWithoutPassword as UserSchema
   }
 
@@ -107,12 +107,12 @@ export class AuthService {
       throw new HttpError('Usuário não encontrado', 404, 'NOT_FOUND')
     }
 
-    const { password: _, ...userWithoutPassword } = user
+    const { password: _password, ...userWithoutPassword } = user
     return userWithoutPassword as UserSchema
   }
 
   private generateToken(user: UserSchema): string {
-    const { password: _, ...payload } = user
+    const { password: _password, ...payload } = user
 
     return jwt.sign(payload, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn,
@@ -122,7 +122,7 @@ export class AuthService {
   verifyToken(token: string): any {
     try {
       return jwt.verify(token, config.jwt.secret)
-    } catch (error) {
+    } catch (_error) {
       throw new HttpError('Token inválido', 401, 'UNAUTHORIZED')
     }
   }
