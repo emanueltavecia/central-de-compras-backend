@@ -14,7 +14,13 @@ export class ProductService {
   }
 
   private removeReadOnlyFields(data: ProductSchema): ProductSchema {
-    const { id, active, createdAt, createdBy, ...cleanData } = data
+    const {
+      id: _id,
+      active: _active,
+      createdAt: _createdAt,
+      createdBy: _createdBy,
+      ...cleanData
+    } = data
     return cleanData as ProductSchema
   }
 

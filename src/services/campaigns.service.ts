@@ -10,7 +10,12 @@ export class CampaignsService {
   }
 
   private removeReadOnlyFields(data: CampaignSchema): CampaignSchema {
-    const { id, active, createdAt, ...cleanData } = data
+    const {
+      id: _id,
+      active: _active,
+      createdAt: _createdAt,
+      ...cleanData
+    } = data
     return cleanData as CampaignSchema
   }
 

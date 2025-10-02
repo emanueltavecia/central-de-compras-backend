@@ -60,6 +60,7 @@ export class ProductController {
         .json(createErrorResponse(error.message, error.errorCode))
     }
   }
+
   @ApiRoute({
     method: 'get',
     path: '/',
@@ -90,6 +91,7 @@ export class ProductController {
         .json(createErrorResponse(error.message, error.errorCode))
     }
   }
+
   @ApiRoute({
     method: 'put',
     path: '/:id',

@@ -12,6 +12,7 @@ export class HealthController {
     method: 'get',
     path: '/',
     summary: 'Endpoint de health check',
+    isPublic: true,
     responses: {
       200: SuccessResponseSchema.create({
         schema: HealthDataSchema,

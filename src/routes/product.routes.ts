@@ -4,4 +4,7 @@ import { ProductController } from '@/controllers/product.controller'
 
 export const productRoutes: ExpressRouter = Router()
 
-export const productSwaggerPaths = registerController(productRoutes, ProductController)
+export const productSwaggerPaths = registerController(
+  productRoutes,
+  ProductController,
+)
