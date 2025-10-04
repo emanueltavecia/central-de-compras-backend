@@ -5,6 +5,7 @@ import {
   SuccessResponseSchema,
   IdParamSchema,
   PaymentConditionFiltersSchema,
+  UpdatePaymentConditionStatusSchema,
 } from '@/schemas'
 import { createSuccessResponse, createErrorResponse } from '@/utils'
 import { Request, Response } from 'express'
@@ -199,7 +200,46 @@ export class PaymentConditionsController {
         .json(createErrorResponse(error.message, error.errorCode))
     }
   }
+
+  @ApiRoute({
+    method: 'patch',
+    path: '/:id/status',
+    summary: 'Atualiza status de uma condição de pagamento',
+    params: IdParamSchema,
+    body: UpdatePaymentConditionStatusSchema,
+    responses: {
+      200: SuccessResponseSchema.create({
+        schema: PaymentConditionSchema,
+        dataDescription: 'Condição de pagamento com status atualizado',
+        message: 'Status da condição de pagamento atualizado com sucesso',
+      }),
+      400: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema,
+    },
+  })
+  async updatePaymentConditionStatus(
+    body: UpdatePaymentConditionStatusSchema,
+    req: Request,
+    res: Response,
+  ) {
+    try {
+      const { id } = req.params
+      const { active } = body
+      const updated = await this.service.updateStatus(id, active)
+      const statusMessage = active ? 'ativada' : 'inativada'
+      return res
+        .status(200)
+        .json(
+          createSuccessResponse(
+            `Condição de pagamento ${statusMessage} com sucesso`,
+            updated,
+          ),
+        )
+    } catch (error: any) {
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
+    }
+  }
 }
-
-
-

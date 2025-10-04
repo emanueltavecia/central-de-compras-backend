@@ -128,7 +128,38 @@ export class PaymentConditionsService {
       )
     }
   }
+
+  async updateStatus(
+    id: string,
+    active: boolean,
+  ): Promise<PaymentConditionSchema> {
+    try {
+      const existing = await this.repository.findById(id)
+      if (!existing) {
+        throw new HttpError(
+          'Condição de pagamento não encontrada',
+          404,
+          'PAYMENT_CONDITION_NOT_FOUND',
+        )
+      }
+
+      const updated = await this.repository.update(id, { active })
+      if (!updated) {
+        throw new HttpError(
+          'Erro ao atualizar status da condição de pagamento',
+          500,
+          'PAYMENT_CONDITION_STATUS_UPDATE_ERROR',
+        )
+      }
+      return updated
+    } catch (error) {
+      if (error instanceof HttpError) throw error
+      console.error('Error updating payment condition status:', error)
+      throw new HttpError(
+        'Erro ao atualizar status da condição de pagamento',
+        500,
+        'PAYMENT_CONDITION_STATUS_UPDATE_ERROR',
+      )
+    }
+  }
 }
-
-
-
