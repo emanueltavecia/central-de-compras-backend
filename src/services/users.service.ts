@@ -1,135 +1,155 @@
-// LEGENDA
-// ESTA FUNCIONANDO -> 🟢
-// NÃO ESTA FUNCIONANDO -> 🔴 
 import { UsersRepository } from '@/repository/users.repository'
 import { OrganizationsRepository } from '@/repository/organizations.repository'
 import bcrypt from 'bcryptjs'
 import { UserSchema } from '@/schemas'
 import { UserAccountStatus } from '@/enums'
+import { HttpError } from '@/utils'
 
 export class UsersService {
-    private repo = new UsersRepository()
-    private orgRepo = new OrganizationsRepository()
+  private repo = new UsersRepository()
+  private orgRepo = new OrganizationsRepository()
 
-    // CRIAR NOVO USUÁRIO 🟢
-    async createUser(userData: UserSchema, currentUserId: string) {
-        const emailExists = await this.repo.checkEmailExists(userData.email)
-        if (emailExists) {
-        throw { statusCode: 409, message: 'E-mail já está em uso', errorCode: 'EMAIL_EXISTS' }
-        }
+  async createUser(userData: UserSchema, currentUserId: string) {
+    const emailExists = await this.repo.checkEmailExists(userData.email)
+    if (emailExists) {
+      throw new HttpError('E-mail já está em uso', 409, 'EMAIL_EXISTS')
+    }
 
-        const organization = await this.orgRepo.findById(userData.organizationId)
-        if (!organization) {
-        throw { statusCode: 400, message: 'Organização inválida', errorCode: 'INVALID_ORGANIZATION' }
-        }
+    const organization = await this.orgRepo.findById(userData.organizationId)
+    if (!organization) {
+      throw new HttpError('Organização inválida', 400, 'INVALID_ORGANIZATION')
+    }
 
-        let roleName: 'admin' | 'store' | 'supplier'
-        switch (organization.type) {
-        case 'central':
-            roleName = 'admin'
-            break
-        case 'store':
-            roleName = 'store'
-            break
-        case 'supplier':
-            roleName = 'supplier'
-            break
-        default:
-            throw { statusCode: 400, message: 'Tipo de organização inválido', errorCode: 'INVALID_ORG_TYPE' }
-        }
-
-        const hashedPassword = await bcrypt.hash(userData.password!, 12)
-
-        return this.repo.create(
-        {
-            ...userData,
-            password: hashedPassword,
-            roleId: await this.repo.getRoleIdByName(roleName),
-            status: UserAccountStatus.ACTIVE,
-        },
-        currentUserId,
+    let roleName: 'admin' | 'store' | 'supplier'
+    switch (organization.type) {
+      case 'central':
+        roleName = 'admin'
+        break
+      case 'store':
+        roleName = 'store'
+        break
+      case 'supplier':
+        roleName = 'supplier'
+        break
+      default:
+        throw new HttpError(
+          'Tipo de organização inválido',
+          400,
+          'INVALID_ORG_TYPE',
         )
     }
 
-    // BUSCAR USUÁRIO COM FILTROS 🟢
-    async getUsers(filters?: { status?: string; roleId?: string; organizationId?: string }) {
-        return this.repo.findAll(filters)
-    }
+    const hashedPassword = await bcrypt.hash(userData.password!, 12)
 
-    // BUSCAR USUÁRIO POR ID 🟢
-    async getUserById(id: string) {
-        return this.repo.findById(id)
-    }
+    return this.repo.create(
+      {
+        ...userData,
+        password: hashedPassword,
+        roleId: await this.repo.getRoleIdByName(roleName),
+        status: UserAccountStatus.ACTIVE,
+      },
+      currentUserId,
+    )
+  }
 
-    // ATUALIZAR USUÁRIO 🟢
-    async updateUser(id: string, organizationId: string, userData: Partial<UserSchema>) {
+  async getUsers(filters?: {
+    status?: string
+    roleId?: string
+    organizationId?: string
+  }) {
+    return this.repo.findAll(filters)
+  }
+
+  async getUserById(id: string) {
+    return this.repo.findById(id)
+  }
+
+  async updateUser(
+    id: string,
+    organizationId: string,
+    userData: Partial<UserSchema>,
+  ) {
     if (userData.email) {
-        const emailExists = await this.repo.checkEmailExists(userData.email)
-        if (emailExists) {
-        throw { statusCode: 409, message: 'E-mail já está em uso', errorCode: 'EMAIL_EXISTS' }
-        }
+      const emailExists = await this.repo.checkEmailExists(userData.email)
+      if (emailExists) {
+        throw new HttpError('E-mail já está em uso', 409, 'EMAIL_EXISTS')
+      }
     }
 
-    let dataToUpdate: Partial<UserSchema> = { ...userData }
+    const dataToUpdate: Partial<UserSchema> = { ...userData }
 
     if (userData.password) {
-        dataToUpdate.password = await bcrypt.hash(userData.password, 12)
+      dataToUpdate.password = await bcrypt.hash(userData.password, 12)
     }
 
     if (userData.organizationId) {
-        const organization = await this.orgRepo.findById(userData.organizationId)
-        if (!organization) {
-        throw { statusCode: 400, message: 'Organização inválida', errorCode: 'INVALID_ORGANIZATION' }
-        }
+      const organization = await this.orgRepo.findById(userData.organizationId)
+      if (!organization) {
+        throw new HttpError('Organização inválida', 400, 'INVALID_ORGANIZATION')
+      }
 
-        let roleName: 'admin' | 'store' | 'supplier'
-        switch (organization.type) {
+      let roleName: 'admin' | 'store' | 'supplier'
+      switch (organization.type) {
         case 'central':
-            roleName = 'admin'
-            break
+          roleName = 'admin'
+          break
         case 'store':
-            roleName = 'store'
-            break
+          roleName = 'store'
+          break
         case 'supplier':
-            roleName = 'supplier'
-            break
+          roleName = 'supplier'
+          break
         default:
-            throw { statusCode: 400, message: 'Tipo de organização inválido', errorCode: 'INVALID_ORG_TYPE' }
-        }
+          throw new HttpError(
+            'Tipo de organização inválido',
+            400,
+            'INVALID_ORG_TYPE',
+          )
+      }
 
-        dataToUpdate.roleId = await this.repo.getRoleIdByName(roleName)
+      dataToUpdate.roleId = await this.repo.getRoleIdByName(roleName)
     }
 
     return this.repo.update(id, organizationId, dataToUpdate)
+  }
+
+  async updateStatus(id: string, status: string, currentUserId: string) {
+    if (id === currentUserId) {
+      throw new HttpError(
+        'Não é possível alterar seu próprio status',
+        400,
+        'CANNOT_SELF_DISABLE',
+      )
     }
 
-    // ATUALIZAR STATUS DO USUÁRIO 🟢
-    async updateStatus(id: string, status: string, currentUserId: string) {
-        if (id === currentUserId) {
-            throw { statusCode: 400, message: 'Não é possível alterar seu próprio status', errorCode: 'CANNOT_SELF_DISABLE' }
-        }
+    const user = await this.repo.findById(id)
+    if (!user)
+      throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
 
-        const user = await this.repo.findById(id)
-        if (!user) throw { statusCode: 404, message: 'Usuário não encontrado', errorCode: 'USER_NOT_FOUND' }
-
-        if (user.role?.name === 'admin') {
-            throw { statusCode: 400, message: 'Não é possível alterar o status de um admin', errorCode: 'CANNOT_UPDATE_ADMIN' }
-        }
-
-        return this.repo.updateStatus(id, status, currentUserId)
+    if (user.role?.name === 'admin') {
+      throw new HttpError(
+        'Não é possível alterar o status de um admin',
+        400,
+        'CANNOT_UPDATE_ADMIN',
+      )
     }
 
-    // DELETAR USUÁRIO 🟢
-    async deleteUser(id: string, currentUserId: string) {
-        if (id === currentUserId) {
-            throw { statusCode: 400, message: 'Não é possível excluir a si mesmo', errorCode: 'CANNOT_SELF_DELETE' }
-        }
+    return this.repo.updateStatus(id, status, currentUserId)
+  }
 
-        return this.repo.delete(id)
+  async deleteUser(id: string, currentUserId: string) {
+    if (id === currentUserId) {
+      throw new HttpError(
+        'Não é possível excluir a si mesmo',
+        400,
+        'CANNOT_SELF_DELETE',
+      )
     }
 
-    // OBTER PERMISSÕES DO USUÁRIO 🟢
-    async getUserPermissions(id: string, organizationId: string) {
-        return this.repo.getUserPermissions(id, organizationId)
-    }
+    return this.repo.delete(id)
+  }
+
+  async getUserPermissions(id: string, organizationId: string) {
+    return this.repo.getUserPermissions(id, organizationId)
+  }
 }

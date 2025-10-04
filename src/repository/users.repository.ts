@@ -1,12 +1,8 @@
-// LEGENDA
-// ESTA FUNCIONANDO -> 🟢
-// NÃO ESTA FUNCIONANDO -> 🔴
+import { HttpError } from '@/utils'
 import { BaseRepository } from './base.repository'
 import { UserSchema } from '@/schemas'
 
 export class UsersRepository extends BaseRepository {
-
-  // BUSCAR ID ROLE POR NOME 🟢
   async getRoleIdByName(roleName: string): Promise<string> {
     const query = `SELECT id FROM roles WHERE name = $1 LIMIT 1`
     const result = await this.executeQuery<{ id: string }>(query, [roleName])
@@ -18,8 +14,11 @@ export class UsersRepository extends BaseRepository {
     return result[0].id
   }
 
-  // BUSCAR USUÁRIOS COM FILTROS 🟢
-  async findAll(filters?: { status?: string; roleId?: string; organizationId?: string }): Promise<UserSchema[]> {
+  async findAll(filters?: {
+    status?: string
+    roleId?: string
+    organizationId?: string
+  }): Promise<UserSchema[]> {
     const conditions: string[] = []
     const params: any[] = []
     let paramIndex = 1
@@ -39,7 +38,8 @@ export class UsersRepository extends BaseRepository {
       params.push(filters.organizationId)
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     const query = `
       SELECT 
@@ -97,7 +97,6 @@ export class UsersRepository extends BaseRepository {
     }))
   }
 
-  // BUSCAR USUÁRIOS POR ID 🟢
   async findById(id: string): Promise<UserSchema | null> {
     const query = `
       SELECT 
@@ -156,7 +155,6 @@ export class UsersRepository extends BaseRepository {
     }
   }
 
-  // CRIAR NOVO FUNCIONARIO 🟢
   async create(
     userData: Partial<UserSchema>,
     createdBy: string,
@@ -180,7 +178,6 @@ export class UsersRepository extends BaseRepository {
     return this.findById(result[0].id) as Promise<UserSchema>
   }
 
-  // ATUALIZAR FUNCIONÁRIO 🟢
   async update(
     id: string,
     organizationId: string,
@@ -224,8 +221,11 @@ export class UsersRepository extends BaseRepository {
     return this.findById(result[0].id)
   }
 
-  // ATUALIZAR STATUS 🟢
-  async updateStatus(id: string, organizationId: string, status: string): Promise<UserSchema | null> {
+  async updateStatus(
+    id: string,
+    organizationId: string,
+    status: string,
+  ): Promise<UserSchema | null> {
     const query = `
       UPDATE users
       SET status = $1
@@ -233,18 +233,21 @@ export class UsersRepository extends BaseRepository {
       RETURNING id
     `
 
-    const result = await this.executeQuery<any>(query, [status, id, organizationId])
+    const result = await this.executeQuery<any>(query, [
+      status,
+      id,
+      organizationId,
+    ])
     if (result.length === 0) return null
 
     return this.findById(result[0].id)
   }
 
-  // CHECAR VINCULOS 🟢
   async hasRelatedRecords(userId: string): Promise<boolean> {
     const queries = [
       `SELECT 1 FROM products WHERE created_by = $1 LIMIT 1`,
       `SELECT 1 FROM orders WHERE created_by = $1 LIMIT 1`,
-      `SELECT 1 FROM organizations WHERE created_by = $1 LIMIT 1`
+      `SELECT 1 FROM organizations WHERE created_by = $1 LIMIT 1`,
     ]
 
     for (const query of queries) {
@@ -255,19 +258,25 @@ export class UsersRepository extends BaseRepository {
     return false
   }
 
-  // DELETAR FUNCIONÁRIO 🟢
   async delete(id: string): Promise<'deleted' | 'inactivated'> {
-    // Primeiro: buscar usuário
     const user = await this.findById(id)
-    if (!user) throw { statusCode: 404, message: 'Usuário não encontrado', errorCode: 'USER_NOT_FOUND' }
+    if (!user)
+      throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
 
     if (user.role?.name === 'admin') {
-      throw { statusCode: 400, message: 'Não é possível excluir usuário admin', errorCode: 'CANNOT_DELETE_ADMIN' }
+      throw new HttpError(
+        'Não é possível excluir usuário admin',
+        400,
+        'CANNOT_DELETE_ADMIN',
+      )
     }
     const hasRelations = await this.hasRelatedRecords(id)
 
     if (hasRelations) {
-      await this.executeQuery(`UPDATE users SET status = 'inactive' WHERE id = $1`, [id])
+      await this.executeQuery(
+        `UPDATE users SET status = 'inactive' WHERE id = $1`,
+        [id],
+      )
       return 'inactivated'
     } else {
       await this.executeQuery(`DELETE FROM users WHERE id = $1`, [id])
@@ -275,8 +284,10 @@ export class UsersRepository extends BaseRepository {
     }
   }
 
-  // BUSCAR PERMISSÕES DO USUÁRIO 🟢
-  async getUserPermissions(id: string, organizationId: string): Promise<string[]> {
+  async getUserPermissions(
+    id: string,
+    organizationId: string,
+  ): Promise<string[]> {
     const query = `
       SELECT p.name
       FROM users u
@@ -285,11 +296,13 @@ export class UsersRepository extends BaseRepository {
       INNER JOIN permissions p ON rp.permission_id = p.id
       WHERE u.id = $1 AND u.organization_id = $2
     `
-    const result = await this.executeQuery<{ name: string }>(query, [id, organizationId])
+    const result = await this.executeQuery<{ name: string }>(query, [
+      id,
+      organizationId,
+    ])
     return result.map((row) => row.name)
   }
 
-  // CHECAR SE EMAIL JÁ EXISTE 🟢
   async checkEmailExists(email: string): Promise<boolean> {
     const query = 'SELECT 1 FROM users WHERE email = $1'
     const result = await this.executeQuery(query, [email])

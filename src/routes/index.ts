@@ -4,8 +4,14 @@ import { authRoutes, authSwaggerPaths } from './auth.routes'
 import { campaignsRoutes, campaignsSwaggerPaths } from './campaigns.routes'
 import { productRoutes, productSwaggerPaths } from './product.routes'
 import { usersRoutes, usersSwaggerPaths } from './users.routes'
-import { organizationsRoutes, organizationsSwaggerPaths } from './organizations.routes'
-import { supplierStateConditionsRoutes, supplierStateConditionsSwaggerPaths } from './supplier-state-conditions.routes'
+import {
+  organizationsRoutes,
+  organizationsSwaggerPaths,
+} from './organizations.routes'
+import {
+  supplierStateConditionsRoutes,
+  supplierStateConditionsSwaggerPaths,
+} from './supplier-state-conditions.routes'
 
 export function registerRoutes(app: Express) {
   app.use(healthRoutes)

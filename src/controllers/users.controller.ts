@@ -1,6 +1,3 @@
-//LEGENDA
-// ESTA FUNCIONANDO -> 🟢
-// NÃO ESTA FUNCIONANDO -> 🔴
 import { Response } from 'express'
 import { ApiController, ApiRoute } from '@/decorators'
 import { PermissionName } from '@/enums'
@@ -18,8 +15,6 @@ const usersService = new UsersService()
 
 @ApiController('/users', ['Users'])
 export class UsersController {
-
-  // BUSCAR USUÁRIOS COM FILTROS 🟢
   @ApiRoute({
     method: 'get',
     path: '/',
@@ -46,14 +41,17 @@ export class UsersController {
         organizationId: organizationId as string | undefined,
       })
 
-      return res.status(200).json(createSuccessResponse('Usuários obtidos com sucesso', users))
+      return res
+        .status(200)
+        .json(createSuccessResponse('Usuários obtidos com sucesso', users))
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  // BUSCAR USUÁRIOS POR ID 🟢
-    @ApiRoute({
+  @ApiRoute({
     method: 'get',
     path: '/:id',
     summary: 'Obter usuário específico',
@@ -77,17 +75,22 @@ export class UsersController {
       const user = await usersService.getUserById(id)
 
       if (!user) {
-        return res.status(404).json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
+        return res
+          .status(404)
+          .json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
       }
 
-      return res.status(200).json(createSuccessResponse('Usuário obtido com sucesso', user))
+      return res
+        .status(200)
+        .json(createSuccessResponse('Usuário obtido com sucesso', user))
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  // CRIAR NOVO USUÁRIO 🟢
-    @ApiRoute({
+  @ApiRoute({
     method: 'post',
     path: '/',
     summary: 'Criar novo usuário',
@@ -106,19 +109,22 @@ export class UsersController {
       500: ErrorResponseSchema,
     },
   })
-    async createUser(req: AuthenticatedRequest, res: Response) {
+  async createUser(req: AuthenticatedRequest, res: Response) {
     try {
       const currentUser = req.user!
       const userData = req.body as UserSchema
       const newUser = await usersService.createUser(userData, currentUser.id)
 
-      return res.status(201).json(createSuccessResponse('Usuário criado com sucesso', newUser))
+      return res
+        .status(201)
+        .json(createSuccessResponse('Usuário criado com sucesso', newUser))
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  // ATUALIZAR USUÁRIO 🟢
   @ApiRoute({
     method: 'put',
     path: '/:id',
@@ -144,25 +150,36 @@ export class UsersController {
       const currentUser = req.user!
       const userData = req.body as UserSchema
 
-      const updatedUser = await usersService.updateUser(id, currentUser.organizationId!, userData)
+      const updatedUser = await usersService.updateUser(
+        id,
+        currentUser.organizationId!,
+        userData,
+      )
 
       if (!updatedUser) {
-        return res.status(404).json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
+        return res
+          .status(404)
+          .json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
       }
 
-      return res.status(200).json(createSuccessResponse('Usuário atualizado com sucesso', updatedUser))
+      return res
+        .status(200)
+        .json(
+          createSuccessResponse('Usuário atualizado com sucesso', updatedUser),
+        )
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  // ATUALIZAR STATUS DO USUÁRIO 🟢
   @ApiRoute({
     method: 'patch',
     path: '/:id/status',
     summary: 'Alterar status ativo/inativo do usuário',
     permissions: [PermissionName.MANAGE_USERS],
-    body: UserSchema, 
+    body: UserSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: UserSchema,
@@ -182,19 +199,33 @@ export class UsersController {
       const { status } = req.body
       const currentUser = req.user!
 
-      const updatedUser = await usersService.updateStatus(id, status, currentUser.id)
+      const updatedUser = await usersService.updateStatus(
+        id,
+        status,
+        currentUser.id,
+      )
 
       if (!updatedUser) {
-        return res.status(404).json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
+        return res
+          .status(404)
+          .json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
       }
 
-      return res.status(200).json(createSuccessResponse('Status do usuário atualizado com sucesso', updatedUser))
+      return res
+        .status(200)
+        .json(
+          createSuccessResponse(
+            'Status do usuário atualizado com sucesso',
+            updatedUser,
+          ),
+        )
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  // DELETAR USUÁRIO 🟢
   @ApiRoute({
     method: 'delete',
     path: '/:id',
@@ -205,7 +236,7 @@ export class UsersController {
         schema: UserSchema,
         dataDescription: 'Confirmação de exclusão',
         message: 'Usuário deletado com sucesso',
-        }),
+      }),
       401: ErrorResponseSchema,
       403: ErrorResponseSchema,
       404: ErrorResponseSchema,
@@ -221,16 +252,26 @@ export class UsersController {
       const result = await usersService.deleteUser(id, currentUser.id)
 
       if (result === 'inactivated') {
-        return res.status(200).json(createSuccessResponse('Usuário inativado devido a vínculos existentes', null))
+        return res
+          .status(200)
+          .json(
+            createSuccessResponse(
+              'Usuário inativado devido a vínculos existentes',
+              null,
+            ),
+          )
       }
 
-      return res.status(200).json(createSuccessResponse('Usuário deletado com sucesso', null))
+      return res
+        .status(200)
+        .json(createSuccessResponse('Usuário deletado com sucesso', null))
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  // OBTER PERMISSÕES DO USUÁRIO 🟢
   @ApiRoute({
     method: 'get',
     path: '/:id/permissions',
@@ -254,11 +295,20 @@ export class UsersController {
       const { id } = req.params
       const currentUser = req.user!
 
-      const permissions = await usersService.getUserPermissions(id, currentUser.organizationId!)
+      const permissions = await usersService.getUserPermissions(
+        id,
+        currentUser.organizationId!,
+      )
 
-      return res.status(200).json(createSuccessResponse('Permissões obtidas com sucesso', permissions))
+      return res
+        .status(200)
+        .json(
+          createSuccessResponse('Permissões obtidas com sucesso', permissions),
+        )
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
     }
   }
 }

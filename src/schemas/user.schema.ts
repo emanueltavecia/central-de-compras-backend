@@ -106,7 +106,7 @@ export class UserSchema {
     required: true,
   })
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
-  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED }) 
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   organizationId: string
 
   @ApiProperty({
