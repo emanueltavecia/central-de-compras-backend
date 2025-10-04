@@ -83,7 +83,7 @@ export class UserSchema {
     type: 'string',
     format: 'uuid',
     required: true,
-    writeOnly: true,
+    readOnly: true,
   })
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
@@ -103,11 +103,11 @@ export class UserSchema {
     example: '123e4567-e89b-12d3-a456-426614174000',
     type: 'string',
     format: 'uuid',
-    required: false,
+    required: true,
   })
-  @IsOptional()
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
-  organizationId?: string
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED }) 
+  organizationId: string
 
   @ApiProperty({
     description: 'Status da conta do usuário',

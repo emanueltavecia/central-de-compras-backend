@@ -1,29 +1,34 @@
+//LEGENDA
+// ESTA FUNCIONANDO -> 🟢
+// NÃO ESTA FUNCIONANDO -> 🔴
 import { Response } from 'express'
 import { ApiController, ApiRoute } from '@/decorators'
-import { PermissionName, UserAccountStatus } from '@/enums'
+import { PermissionName } from '@/enums'
 import { AuthenticatedRequest } from '@/middlewares'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
 import {
-    UserSchema,
-    ErrorResponseSchema,
-    SuccessResponseSchema,
+  UserSchema,
+  ErrorResponseSchema,
+  SuccessResponseSchema,
+  PermissionSchema,
 } from '@/schemas'
-import { UsersRepository } from '@/repository/users.repository'
-import bcrypt from 'bcryptjs'
+import { UsersService } from '@/services/users.service'
 
-const usersRepository = new UsersRepository()
+const usersService = new UsersService()
 
 @ApiController('/users', ['Users'])
 export class UsersController {
+
+  // BUSCAR USUÁRIOS COM FILTROS 🟢
   @ApiRoute({
     method: 'get',
     path: '/',
-    summary: 'Listar usuários da organização do usuário logado',
+    summary: 'Buscar usuário usando filtros',
     permissions: [PermissionName.MANAGE_USERS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: UserSchema,
-        dataDescription: 'Lista de usuários da organização',
+        dataDescription: 'Lista de usuários',
         message: 'Usuários obtidos com sucesso',
       }),
       401: ErrorResponseSchema,
@@ -33,28 +38,22 @@ export class UsersController {
   })
   async getUsers(req: AuthenticatedRequest, res: Response) {
     try {
-      const currentUser = req.user!
-      const { status, roleId } = req.query
+      const { status, roleId, organizationId } = req.query
 
-      const users = await usersRepository.findAllByOrganization(
-        currentUser.organizationId!,
-        {
-          status: status as string | undefined,
-          roleId: roleId as string | undefined,
-        },
-      )
+      const users = await usersService.getUsers({
+        status: status as string | undefined,
+        roleId: roleId as string | undefined,
+        organizationId: organizationId as string | undefined,
+      })
 
-      return res
-        .status(200)
-        .json(createSuccessResponse('Usuários obtidos com sucesso', users))
+      return res.status(200).json(createSuccessResponse('Usuários obtidos com sucesso', users))
     } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  @ApiRoute({
+  // BUSCAR USUÁRIOS POR ID 🟢
+    @ApiRoute({
     method: 'get',
     path: '/:id',
     summary: 'Obter usuário específico',
@@ -75,29 +74,23 @@ export class UsersController {
   async getUser(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
-      const currentUser = req.user!
+      const user = await usersService.getUserById(id)
 
-      const user = await usersRepository.findById(id, currentUser.organizationId!)
       if (!user) {
-        return res
-          .status(404)
-          .json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
+        return res.status(404).json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
       }
 
-      return res
-        .status(200)
-        .json(createSuccessResponse('Usuário obtido com sucesso', user))
+      return res.status(200).json(createSuccessResponse('Usuário obtido com sucesso', user))
     } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  @ApiRoute({
+  // CRIAR NOVO USUÁRIO 🟢
+    @ApiRoute({
     method: 'post',
     path: '/',
-    summary: 'Criar novo usuário na organização',
+    summary: 'Criar novo usuário',
     permissions: [PermissionName.MANAGE_USERS],
     body: UserSchema,
     responses: {
@@ -113,48 +106,19 @@ export class UsersController {
       500: ErrorResponseSchema,
     },
   })
-  async createUser(req: AuthenticatedRequest, res: Response) {
+    async createUser(req: AuthenticatedRequest, res: Response) {
     try {
       const currentUser = req.user!
       const userData = req.body as UserSchema
+      const newUser = await usersService.createUser(userData, currentUser.id)
 
-      const emailExists = await usersRepository.checkEmailExists(userData.email)
-      if (emailExists) {
-        return res.status(409).json({
-          success: false,
-          message: 'E-mail já está em uso',
-          errorCode: 'EMAIL_EXISTS',
-          data: null,
-        })
-      }
-
-      const hashedPassword = await bcrypt.hash(userData.password!, 12)
-
-      const newUser = await usersRepository.create(
-        {
-          ...userData,
-          password: hashedPassword,
-          organizationId: currentUser.organizationId!,
-          status: UserAccountStatus.ACTIVE,
-        },
-        currentUser.id,
-      )
-
-      return res.status(201).json({
-        success: true,
-        message: 'Usuário criado com sucesso',
-        data: newUser,
-      })
+      return res.status(201).json(createSuccessResponse('Usuário criado com sucesso', newUser))
     } catch (error: any) {
-      return res.status(error.statusCode || 500).json({
-        success: false,
-        message: error.message,
-        errorCode: error.errorCode,
-        data: null,
-      })
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
+  // ATUALIZAR USUÁRIO 🟢
   @ApiRoute({
     method: 'put',
     path: '/:id',
@@ -180,42 +144,19 @@ export class UsersController {
       const currentUser = req.user!
       const userData = req.body as UserSchema
 
-      if (userData.email) {
-        const emailExists = await usersRepository.checkEmailExists(userData.email)
-        if (emailExists) {
-          return res
-            .status(409)
-            .json(createErrorResponse('E-mail já está em uso', 'EMAIL_EXISTS'))
-        }
-      }
-
-      let dataToUpdate: Partial<UserSchema> = { ...userData }
-      if (userData.password) {
-        dataToUpdate.password = await bcrypt.hash(userData.password, 12)
-      }
-
-      const updatedUser = await usersRepository.update(
-        id,
-        currentUser.organizationId!,
-        dataToUpdate,
-      )
+      const updatedUser = await usersService.updateUser(id, currentUser.organizationId!, userData)
 
       if (!updatedUser) {
-        return res
-          .status(404)
-          .json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
+        return res.status(404).json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
       }
 
-      return res
-        .status(200)
-        .json(createSuccessResponse('Usuário atualizado com sucesso', updatedUser))
+      return res.status(200).json(createSuccessResponse('Usuário atualizado com sucesso', updatedUser))
     } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
+  // ATUALIZAR STATUS DO USUÁRIO 🟢
   @ApiRoute({
     method: 'patch',
     path: '/:id/status',
@@ -241,34 +182,19 @@ export class UsersController {
       const { status } = req.body
       const currentUser = req.user!
 
-      if (id === currentUser.id) {
-        return res
-          .status(400)
-          .json(createErrorResponse('Não é possível alterar seu próprio status', 'CANNOT_SELF_DISABLE'))
-      }
-
-      const updatedUser = await usersRepository.updateStatus(
-        id,
-        currentUser.organizationId!,
-        status,
-      )
+      const updatedUser = await usersService.updateStatus(id, status, currentUser.id)
 
       if (!updatedUser) {
-        return res
-          .status(404)
-          .json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
+        return res.status(404).json(createErrorResponse('Usuário não encontrado', 'USER_NOT_FOUND'))
       }
 
-      return res
-        .status(200)
-        .json(createSuccessResponse('Status do usuário atualizado com sucesso', updatedUser))
+      return res.status(200).json(createSuccessResponse('Status do usuário atualizado com sucesso', updatedUser))
     } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
+  // DELETAR USUÁRIO 🟢
   @ApiRoute({
     method: 'delete',
     path: '/:id',
@@ -292,62 +218,19 @@ export class UsersController {
       const { id } = req.params
       const currentUser = req.user!
 
-      if (id === currentUser.id) {
-        return res
-          .status(400)
-          .json(createErrorResponse('Não é possível excluir a si mesmo', 'CANNOT_SELF_DELETE'))
+      const result = await usersService.deleteUser(id, currentUser.id)
+
+      if (result === 'inactivated') {
+        return res.status(200).json(createSuccessResponse('Usuário inativado devido a vínculos existentes', null))
       }
 
-      await usersRepository.delete(id, currentUser.organizationId!)
-
-      return res
-        .status(200)
-        .json(createSuccessResponse('Usuário deletado com sucesso', null))
+      return res.status(200).json(createSuccessResponse('Usuário deletado com sucesso', null))
     } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 
-  @ApiRoute({
-    method: 'patch',
-    path: '/:id/password',
-    summary: 'Alterar senha do usuário',
-    permissions: [PermissionName.MANAGE_USERS],
-    body: UserSchema,
-    responses: {
-      200: SuccessResponseSchema.create({
-        schema: UserSchema,
-        dataDescription: 'Confirmação de alteração de senha',
-        message: 'Senha alterada com sucesso',
-      }),
-      400: ErrorResponseSchema,
-      401: ErrorResponseSchema,
-      403: ErrorResponseSchema,
-      404: ErrorResponseSchema,
-      500: ErrorResponseSchema,
-    },
-  })
-  async updateUserPassword(req: AuthenticatedRequest, res: Response) {
-    try {
-      const { id } = req.params
-      const { newPassword } = req.body
-      const currentUser = req.user!
-
-      const hashedPassword = await bcrypt.hash(newPassword, 12)
-      await usersRepository.updatePassword(id, currentUser.organizationId!, hashedPassword)
-
-      return res
-        .status(200)
-        .json(createSuccessResponse('Senha alterada com sucesso', null))
-    } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
-    }
-  }
-
+  // OBTER PERMISSÕES DO USUÁRIO 🟢
   @ApiRoute({
     method: 'get',
     path: '/:id/permissions',
@@ -355,10 +238,11 @@ export class UsersController {
     permissions: [PermissionName.MANAGE_USERS],
     responses: {
       200: SuccessResponseSchema.create({
-        schema: UserSchema, 
-        dataDescription: 'Confirmação de permissão de usuário',
-        message: 'Permissão do usuário acessada com sucesso',
-        }),
+        schema: PermissionSchema,
+        isArray: true,
+        dataDescription: 'Lista de permissões do usuário',
+        message: 'Permissões obtidas com sucesso',
+      }),
       401: ErrorResponseSchema,
       403: ErrorResponseSchema,
       404: ErrorResponseSchema,
@@ -370,18 +254,11 @@ export class UsersController {
       const { id } = req.params
       const currentUser = req.user!
 
-      const permissions = await usersRepository.getUserPermissions(
-        id,
-        currentUser.organizationId!,
-      )
+      const permissions = await usersService.getUserPermissions(id, currentUser.organizationId!)
 
-      return res
-        .status(200)
-        .json(createSuccessResponse('Permissões obtidas com sucesso', permissions))
+      return res.status(200).json(createSuccessResponse('Permissões obtidas com sucesso', permissions))
     } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
+      return res.status(error.statusCode || 500).json(createErrorResponse(error.message, error.errorCode))
     }
   }
 }

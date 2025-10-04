@@ -12,9 +12,9 @@ export function registerRoutes(app: Express) {
   app.use(authRoutes)
   app.use(campaignsRoutes)
   app.use(productRoutes)
-  app.use('/api', usersRoutes)
-  app.use('/api', organizationsRoutes)
-  app.use('/api', supplierStateConditionsRoutes)
+  app.use(usersRoutes)
+  app.use(organizationsRoutes)
+  app.use(supplierStateConditionsRoutes)
 }
 
 export const swaggerPaths = {

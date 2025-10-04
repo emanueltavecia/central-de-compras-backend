@@ -45,7 +45,7 @@ INSERT INTO users (email, password, full_name, phone, role_id, organization_id, 
     'Administrador Central',
     '48999999999',
     (SELECT id FROM roles WHERE name = 'admin'),
-    null,
+    (SELECT id FROM organizations WHERE tax_id = 'central'),
     'active'
   ),
   (
