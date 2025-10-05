@@ -8,7 +8,7 @@ import {
   SuccessResponseSchema,
 } from '@/schemas'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
-import { SupplierStateConditionsService } from '@/services/supplier-state-conditions.service'
+import { SupplierStateConditionsService } from '@/services'
 
 @ApiController('/supplier-state-conditions', ['Supplier State Conditions'])
 export class SupplierStateConditionsController {
@@ -42,7 +42,9 @@ export class SupplierStateConditionsController {
 
       return res
         .status(200)
-        .json(createSuccessResponse('Condições obtidas com sucesso', conditions))
+        .json(
+          createSuccessResponse('Condições obtidas com sucesso', conditions),
+        )
     } catch (error: any) {
       return res
         .status(error.statusCode || 500)
@@ -76,7 +78,12 @@ export class SupplierStateConditionsController {
       if (!condition) {
         return res
           .status(404)
-          .json(createErrorResponse('Condição não encontrada', 'CONDITION_NOT_FOUND'))
+          .json(
+            createErrorResponse(
+              'Condição não encontrada',
+              'CONDITION_NOT_FOUND',
+            ),
+          )
       }
 
       return res
@@ -111,13 +118,14 @@ export class SupplierStateConditionsController {
   async createSupplierStateCondition(req: AuthenticatedRequest, res: Response) {
     try {
       const conditionData = req.body as SupplierStateConditionSchema
-      const currentUser = req.user!
 
-      const newCondition = await this.service.create(conditionData, currentUser)
+      const newCondition = await this.service.create(conditionData)
 
       return res
         .status(201)
-        .json(createSuccessResponse('Condição criada com sucesso', newCondition))
+        .json(
+          createSuccessResponse('Condição criada com sucesso', newCondition),
+        )
     } catch (error: any) {
       return res
         .status(error.statusCode || 500)
@@ -150,11 +158,20 @@ export class SupplierStateConditionsController {
       const conditionData = req.body as SupplierStateConditionSchema
       const currentUser = req.user!
 
-      const updatedCondition = await this.service.update(id, conditionData, currentUser)
+      const updatedCondition = await this.service.update(
+        id,
+        conditionData,
+        currentUser,
+      )
 
       return res
         .status(200)
-        .json(createSuccessResponse('Condição atualizada com sucesso', updatedCondition))
+        .json(
+          createSuccessResponse(
+            'Condição atualizada com sucesso',
+            updatedCondition,
+          ),
+        )
     } catch (error: any) {
       return res
         .status(error.statusCode || 500)
@@ -213,15 +230,16 @@ export class SupplierStateConditionsController {
       500: ErrorResponseSchema,
     },
   })
-  async getConditionsBySupplierAndState(req: AuthenticatedRequest, res: Response) {
+  async getConditionsBySupplierAndState(
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
       const { supplierOrgId, state } = req.params
-      const currentUser = req.user!
 
       const condition = await this.service.getBySupplierAndState(
         supplierOrgId,
         state,
-        currentUser,
       )
 
       if (!condition) {

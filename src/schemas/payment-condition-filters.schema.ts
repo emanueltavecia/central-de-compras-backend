@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsUUID, IsBoolean, IsDateString } from 'class-validator'
+import {
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsBoolean,
+  IsDateString,
+} from 'class-validator'
 import { Transform } from 'class-transformer'
 import { ApiProperty } from '@/decorators'
 import { VALIDATION_MESSAGES } from '@/utils'
@@ -46,6 +52,3 @@ export class PaymentConditionFiltersSchema {
   @IsDateString({}, { message: VALIDATION_MESSAGES.INVALID_DATE })
   createdAt?: string
 }
-
-
-

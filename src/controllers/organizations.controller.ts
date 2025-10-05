@@ -7,7 +7,7 @@ import {
   SuccessResponseSchema,
   UserSchema,
 } from '@/schemas'
-import { OrganizationsService } from '@/services/organizations.service'
+import { OrganizationsService } from '@/services'
 
 @ApiController('/organizations', ['Organizations'])
 export class OrganizationsController {
@@ -34,8 +34,7 @@ export class OrganizationsController {
     const { type, active } = req.query
     const currentUser = req.user!
 
-    const activeFilter =
-      active !== undefined ? active === 'true' : undefined
+    const activeFilter = active !== undefined ? active === 'true' : undefined
 
     let filters: { type?: string; active?: boolean } = {}
 
@@ -266,10 +265,14 @@ export class OrganizationsController {
     const { id } = req.params
     const currentUser = req.user!
 
-    if (currentUser.role.name !== 'admin' && currentUser.organizationId !== id) {
+    if (
+      currentUser.role.name !== 'admin' &&
+      currentUser.organizationId !== id
+    ) {
       return {
         success: false,
-        message: 'Você não tem permissão para listar usuários de outra organização.',
+        message:
+          'Você não tem permissão para listar usuários de outra organização.',
         error: 'FORBIDDEN_ACCESS',
       }
     }

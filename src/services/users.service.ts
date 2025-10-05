@@ -1,5 +1,4 @@
-import { UsersRepository } from '@/repository/users.repository'
-import { OrganizationsRepository } from '@/repository/organizations.repository'
+import { UsersRepository, OrganizationsRepository } from '@/repository'
 import bcrypt from 'bcryptjs'
 import { UserSchema } from '@/schemas'
 import { UserAccountStatus } from '@/enums'

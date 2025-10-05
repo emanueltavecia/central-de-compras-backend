@@ -1,6 +1,5 @@
-import { SupplierStateConditionsRepository } from '@/repository/supplier-state-conditions.repository'
-import { SupplierStateConditionSchema } from '@/schemas'
-import { UserSchema } from '@/schemas'
+import { SupplierStateConditionsRepository } from '@/repository'
+import { SupplierStateConditionSchema, UserSchema } from '@/schemas'
 
 export class SupplierStateConditionsService {
   private repo = new SupplierStateConditionsRepository()
@@ -21,11 +20,8 @@ export class SupplierStateConditionsService {
     return this.repo.findById(id, currentUser)
   }
 
-  async create(
-    conditionData: SupplierStateConditionSchema,
-    currentUser: UserSchema,
-  ) {
-    return this.repo.create(conditionData, currentUser)
+  async create(conditionData: SupplierStateConditionSchema) {
+    return this.repo.create(conditionData)
   }
 
   async update(
@@ -40,11 +36,7 @@ export class SupplierStateConditionsService {
     return this.repo.delete(id, currentUser)
   }
 
-  async getBySupplierAndState(
-    supplierOrgId: string,
-    state: string,
-    currentUser: UserSchema,
-  ) {
-    return this.repo.findBySupplierAndState(supplierOrgId, state, currentUser)
+  async getBySupplierAndState(supplierOrgId: string, state: string) {
+    return this.repo.findBySupplierAndState(supplierOrgId, state)
   }
 }

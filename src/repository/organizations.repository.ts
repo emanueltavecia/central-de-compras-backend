@@ -3,7 +3,10 @@ import { BaseRepository } from './base.repository'
 import { OrganizationSchema, UserSchema } from '@/schemas'
 
 export class OrganizationsRepository extends BaseRepository {
-  async findAll(filters?: { type?: string; active?: boolean }): Promise<OrganizationSchema[]> {
+  async findAll(filters?: {
+    type?: string
+    active?: boolean
+  }): Promise<OrganizationSchema[]> {
     let query = `
       SELECT 
         o.id,
@@ -75,7 +78,10 @@ export class OrganizationsRepository extends BaseRepository {
     return result[0]
   }
 
-  async update(id: string, orgData: Partial<OrganizationSchema>): Promise<OrganizationSchema> {
+  async update(
+    id: string,
+    orgData: Partial<OrganizationSchema>,
+  ): Promise<OrganizationSchema> {
     const query = `
       UPDATE organizations
       SET 
@@ -122,7 +128,10 @@ export class OrganizationsRepository extends BaseRepository {
       WHERE id = $2
       RETURNING id, name, type, email, phone, document, active, created_by, created_at
     `
-    const result = await this.executeQuery<OrganizationSchema>(query, [active, id])
+    const result = await this.executeQuery<OrganizationSchema>(query, [
+      active,
+      id,
+    ])
     return result[0]
   }
 

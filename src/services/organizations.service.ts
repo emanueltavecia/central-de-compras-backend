@@ -1,4 +1,4 @@
-import { OrganizationsRepository } from '@/repository/organizations.repository'
+import { OrganizationsRepository } from '@/repository'
 import { OrganizationSchema } from '@/schemas'
 
 export class OrganizationsService {
@@ -20,17 +20,19 @@ export class OrganizationsService {
     return this.repo.update(id, data)
   }
 
-    async deleteOrganization(id: string): Promise<{ deleted: boolean; inactivated: boolean }> {
+  async deleteOrganization(
+    id: string,
+  ): Promise<{ deleted: boolean; inactivated: boolean }> {
     const hasRelations = await this.repo.hasRelations(id)
 
     if (hasRelations) {
-        await this.repo.updateStatus(id, false)
-        return { deleted: false, inactivated: true }
+      await this.repo.updateStatus(id, false)
+      return { deleted: false, inactivated: true }
     } else {
-        await this.repo.deletePermanent(id)
-        return { deleted: true, inactivated: false }
+      await this.repo.deletePermanent(id)
+      return { deleted: true, inactivated: false }
     }
-    }
+  }
 
   async updateOrganizationStatus(id: string, active: boolean) {
     return this.repo.updateStatus(id, active)

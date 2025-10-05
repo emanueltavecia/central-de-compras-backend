@@ -3,7 +3,10 @@ import { healthRoutes, healthSwaggerPaths } from './health.routes'
 import { authRoutes, authSwaggerPaths } from './auth.routes'
 import { campaignsRoutes, campaignsSwaggerPaths } from './campaigns.routes'
 import { productRoutes, productSwaggerPaths } from './product.routes'
-import { paymentConditionsRoutes, paymentConditionsSwaggerPaths } from './payment-conditions.routes'
+import {
+  paymentConditionsRoutes,
+  paymentConditionsSwaggerPaths,
+} from './payment-conditions.routes'
 import { contactsRoutes, contactsSwaggerPaths } from './contacts.routes'
 import { usersRoutes, usersSwaggerPaths } from './users.routes'
 import {

@@ -1,6 +1,7 @@
 import { BaseRepository } from './base.repository'
 import { SupplierStateConditionSchema } from '@/schemas'
 import { AuthenticatedRequest } from '@/middlewares'
+import { HttpError } from '@/utils'
 
 interface FindAllFilters {
   supplierOrgId?: string
@@ -10,7 +11,9 @@ interface FindAllFilters {
 }
 
 export class SupplierStateConditionsRepository extends BaseRepository {
-  async findAll(filters: FindAllFilters): Promise<SupplierStateConditionSchema[]> {
+  async findAll(
+    filters: FindAllFilters,
+  ): Promise<SupplierStateConditionSchema[]> {
     let query = `
       SELECT 
         id,
@@ -45,7 +48,10 @@ export class SupplierStateConditionsRepository extends BaseRepository {
     return this.executeQuery<SupplierStateConditionSchema>(query, params)
   }
 
-  async findById(id: string, currentUser: AuthenticatedRequest['user']): Promise<SupplierStateConditionSchema | null> {
+  async findById(
+    id: string,
+    currentUser: AuthenticatedRequest['user'],
+  ): Promise<SupplierStateConditionSchema | null> {
     const query = `
       SELECT 
         id,
@@ -60,17 +66,20 @@ export class SupplierStateConditionsRepository extends BaseRepository {
       FROM supplier_state_conditions
       WHERE id = $1
     `
-    const result = await this.executeQuery<SupplierStateConditionSchema>(query, [id])
+    const result = await this.executeQuery<SupplierStateConditionSchema>(
+      query,
+      [id],
+    )
 
     if (result.length === 0) return null
 
     const condition = result[0]
 
     if (
-        currentUser!.role?.name === 'SUPPLIER' &&
-        condition.supplierOrgId !== currentUser!.organizationId
+      currentUser!.role?.name === 'SUPPLIER' &&
+      condition.supplierOrgId !== currentUser!.organizationId
     ) {
-        throw { statusCode: 403, message: 'Acesso negado', errorCode: 'FORBIDDEN' }
+      throw new HttpError('Acesso negado', 403, 'FORBIDDEN')
     }
 
     return condition
@@ -78,7 +87,6 @@ export class SupplierStateConditionsRepository extends BaseRepository {
 
   async create(
     conditionData: SupplierStateConditionSchema,
-    currentUser: AuthenticatedRequest['user'],
   ): Promise<SupplierStateConditionSchema> {
     const existsQuery = `
       SELECT 1 
@@ -90,7 +98,11 @@ export class SupplierStateConditionsRepository extends BaseRepository {
       conditionData.state,
     ])
     if (exists.length > 0) {
-      throw { statusCode: 409, message: 'Já existe condição para este fornecedor e estado', errorCode: 'CONDITION_EXISTS' }
+      throw new HttpError(
+        'Já existe condição para este fornecedor e estado',
+        409,
+        'CONDITION_EXISTS',
+      )
     }
 
     const query = `
@@ -115,15 +127,18 @@ export class SupplierStateConditionsRepository extends BaseRepository {
         effective_to as "effectiveTo",
         created_at as "createdAt"
     `
-    const result = await this.executeQuery<SupplierStateConditionSchema>(query, [
-      conditionData.supplierOrgId,
-      conditionData.state,
-      conditionData.cashbackPercent ?? null,
-      conditionData.paymentTermDays ?? null,
-      conditionData.unitPriceAdjustment ?? null,
-      conditionData.effectiveFrom ?? null,
-      conditionData.effectiveTo ?? null,
-    ])
+    const result = await this.executeQuery<SupplierStateConditionSchema>(
+      query,
+      [
+        conditionData.supplierOrgId,
+        conditionData.state,
+        conditionData.cashbackPercent ?? null,
+        conditionData.paymentTermDays ?? null,
+        conditionData.unitPriceAdjustment ?? null,
+        conditionData.effectiveFrom ?? null,
+        conditionData.effectiveTo ?? null,
+      ],
+    )
 
     return result[0]
   }
@@ -135,7 +150,7 @@ export class SupplierStateConditionsRepository extends BaseRepository {
   ): Promise<SupplierStateConditionSchema> {
     const existing = await this.findById(id, currentUser)
     if (!existing) {
-      throw { statusCode: 404, message: 'Condição não encontrada', errorCode: 'CONDITION_NOT_FOUND' }
+      throw new HttpError('Condição não encontrada', 404, 'CONDITION_NOT_FOUND')
     }
 
     const query = `
@@ -158,22 +173,28 @@ export class SupplierStateConditionsRepository extends BaseRepository {
         effective_to as "effectiveTo",
         created_at as "createdAt"
     `
-    const result = await this.executeQuery<SupplierStateConditionSchema>(query, [
-      conditionData.cashbackPercent ?? null,
-      conditionData.paymentTermDays ?? null,
-      conditionData.unitPriceAdjustment ?? null,
-      conditionData.effectiveFrom ?? null,
-      conditionData.effectiveTo ?? null,
-      id,
-    ])
+    const result = await this.executeQuery<SupplierStateConditionSchema>(
+      query,
+      [
+        conditionData.cashbackPercent ?? null,
+        conditionData.paymentTermDays ?? null,
+        conditionData.unitPriceAdjustment ?? null,
+        conditionData.effectiveFrom ?? null,
+        conditionData.effectiveTo ?? null,
+        id,
+      ],
+    )
 
     return result[0]
   }
 
-  async delete(id: string, currentUser: AuthenticatedRequest['user']): Promise<void> {
+  async delete(
+    id: string,
+    currentUser: AuthenticatedRequest['user'],
+  ): Promise<void> {
     const existing = await this.findById(id, currentUser)
     if (!existing) {
-      throw { statusCode: 404, message: 'Condição não encontrada', errorCode: 'CONDITION_NOT_FOUND' }
+      throw new HttpError('Condição não encontrada', 404, 'CONDITION_NOT_FOUND')
     }
 
     const query = `DELETE FROM supplier_state_conditions WHERE id = $1`
@@ -183,7 +204,6 @@ export class SupplierStateConditionsRepository extends BaseRepository {
   async findBySupplierAndState(
     supplierOrgId: string,
     state: string,
-    currentUser: AuthenticatedRequest['user'],
   ): Promise<SupplierStateConditionSchema | null> {
     const query = `
       SELECT 
@@ -203,10 +223,10 @@ export class SupplierStateConditionsRepository extends BaseRepository {
         AND (effective_to IS NULL OR effective_to >= NOW())
       LIMIT 1
     `
-    const result = await this.executeQuery<SupplierStateConditionSchema>(query, [
-      supplierOrgId,
-      state,
-    ])
+    const result = await this.executeQuery<SupplierStateConditionSchema>(
+      query,
+      [supplierOrgId, state],
+    )
 
     return result.length > 0 ? result[0] : null
   }
