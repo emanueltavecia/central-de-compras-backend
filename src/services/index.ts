@@ -1,3 +1,4 @@
 export * from './auth.service'
 export * from './campaigns.service'
+export * from './contacts.service'
 export * from './product.service'

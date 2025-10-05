@@ -5,4 +5,7 @@ import { registerController } from '@/decorators'
 
 export const contactsRoutes: ExpressRouter = Router()
 
-export const contactsSwaggerPaths = registerController(contactsRoutes, ContactsController)
+export const contactsSwaggerPaths = registerController(
+  contactsRoutes,
+  ContactsController,
+)

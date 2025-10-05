@@ -1,102 +1,135 @@
 import { BaseRepository } from './base.repository'
-import { ContactSchema } from '@/schemas'
-import { PoolClient } from '@/database' // Necessário para executeTransaction
-
-// Define a estrutura de filtros, seguindo o padrão ProductFiltersSchema
-// Para contatos, o único filtro necessário na rota index é organizationId
-interface ContactFiltersSchema {
-    organizationId?: string;
-}
+import { ContactSchema, ContactFiltersSchema } from '@/schemas'
+import { PoolClient } from '@/database'
 
 export class ContactRepository extends BaseRepository {
+  private toSnakeCase(str: string): string {
+    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
 
-    // --- HELPER: COPIADO DO ProductRepository para updates dinâmicos ---
-    private toSnakeCase(str: string): string {
-        return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-    }
+  async create(
+    contact: Omit<ContactSchema, 'id' | 'createdAt'>,
+  ): Promise<ContactSchema> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      if (contact.isPrimary) {
+        await client.query(
+          'UPDATE contacts SET is_primary = false WHERE organization_id = $1',
+          [contact.organizationId],
+        )
+      }
 
-    // --- CREATE (Inserir Novo Contato) ---
-    async create(
-        contact: Omit<ContactSchema, 'id' | 'createdAt'>,
-    ): Promise<ContactSchema> {
-        const query = `
-            INSERT INTO contacts (
-              organization_id, name, email, phone, role, is_primary
-            ) VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *
-        `
-        const params = [
-            contact.organizationId,
-            contact.name,
-            contact.email,
-            contact.phone || null, // Permite nulo
-            contact.role || null,  // Permite nulo
-            contact.isPrimary ?? false, // Garante que é booleano (padrão false)
-        ]
-        const result = await this.executeQuery<ContactSchema>(query, params)
-        return result[0]
-    }
+      const query = `
+              INSERT INTO contacts (
+                organization_id, name, email, phone, role, is_primary
+              ) VALUES ($1, $2, $3, $4, $5, $6)
+              RETURNING *
+          `
+      const params = [
+        contact.organizationId,
+        contact.name,
+        contact.email,
+        contact.phone || null,
+        contact.role || null,
+        contact.isPrimary ?? false,
+      ]
 
-    // --- FIND ALL (Listar e Filtrar Contatos) ---
-    async findAll(filters: ContactFiltersSchema = {}): Promise<ContactSchema[]> {
-        const conditions: string[] = []
-        const params: any[] = []
-        let paramIndex = 1
+      const result = await client.query(query, params)
+      return result.rows[0]
+    })
+  }
 
-        if (filters.organizationId) {
-            conditions.push(`organization_id = $${paramIndex}`)
-            params.push(filters.organizationId)
-            paramIndex++
-        }
+  async findAll(filters: ContactFiltersSchema = {}): Promise<ContactSchema[]> {
+    const conditions: string[] = []
+    const params: any[] = []
+    let paramIndex = 1
 
-        const whereClause =
-            conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-        const query = `SELECT * FROM contacts ${whereClause} ORDER BY name ASC`
-
-        return this.executeQuery<ContactSchema>(query, params)
-    }
-
-    // --- FIND BY ID (Buscar Contato Único) ---
-    async findById(id: string): Promise<ContactSchema | null> {
-        const query = 'SELECT * FROM contacts WHERE id = $1'
-        const result = await this.executeQuery<ContactSchema>(query, [id])
-        return result[0] || null
-    }
-
-    // --- UPDATE (Atualizar Dados do Contato) ---
-    async update(
-        id: string,
-        contact: Partial<Omit<ContactSchema, 'id' | 'createdAt'>>,
-    ): Promise<ContactSchema | null> {
-        const fields: string[] = []
-        const params: any[] = []
-        let paramIndex = 1
-
-        Object.entries(contact).forEach(([key, value]) => {
-            if (value !== undefined) {
-              const snakeKey = this.toSnakeCase(key) // Usa o helper
-              fields.push(`${snakeKey} = $${paramIndex}`)
-              params.push(value)
-              paramIndex++
-            }
-        })
-
-        if (fields.length === 0) return null
-
-        params.push(id)
-        const query = `UPDATE contacts SET ${fields.join(', ')} WHERE id = $${params.length} RETURNING *`
-
-        const result = await this.executeQuery<ContactSchema>(query, params)
-        return result[0] || null
-    }
-
-    // --- DELETE (Remover Contato) ---
-    async delete(id: string): Promise<boolean> {
-        // Usa executeTransaction para garantir a verificação do rowCount
-        return this.executeTransaction(async (client: PoolClient) => {
-            const result = await client.query('DELETE FROM contacts WHERE id = $1', [id])
-            // Retorna true se alguma linha foi afetada
-            return (result.rowCount || 0) > 0
-        })
+    if (filters.organizationId) {
+      conditions.push(`organization_id = $${paramIndex}`)
+      params.push(filters.organizationId)
+      paramIndex++
     }
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const query = `SELECT * FROM contacts ${whereClause} ORDER BY name ASC`
+
+    return this.executeQuery<ContactSchema>(query, params)
+  }
+
+  async findById(id: string): Promise<ContactSchema | null> {
+    const query = 'SELECT * FROM contacts WHERE id = $1'
+    const result = await this.executeQuery<ContactSchema>(query, [id])
+    return result[0] || null
+  }
+
+  async update(
+    id: string,
+    contact: Partial<Omit<ContactSchema, 'id' | 'createdAt'>>,
+  ): Promise<ContactSchema | null> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      if (contact.isPrimary) {
+        await client.query(
+          'UPDATE contacts SET is_primary = false WHERE organization_id = $1',
+          [contact.organizationId],
+        )
+      }
+
+      const fields: string[] = []
+      const params: any[] = []
+      let paramIndex = 1
+
+      Object.entries(contact).forEach(([key, value]) => {
+        if (value !== undefined) {
+          const snakeKey = this.toSnakeCase(key)
+          fields.push(`${snakeKey} = $${paramIndex}`)
+          params.push(value)
+          paramIndex++
+        }
+      })
+
+      if (fields.length === 0) return null
+
+      params.push(id)
+      const query = `UPDATE contacts SET ${fields.join(', ')} WHERE id = $${params.length} RETURNING *`
+
+      const result = await client.query(query, params)
+      return result.rows[0] || null
+    })
+  }
+
+  async delete(id: string): Promise<boolean> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      const result = await client.query('DELETE FROM contacts WHERE id = $1', [
+        id,
+      ])
+      return (result.rowCount || 0) > 0
+    })
+  }
+
+  async setPrimaryContact(id: string): Promise<ContactSchema | null> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      const contactResult = await client.query(
+        'SELECT * FROM contacts WHERE id = $1',
+        [id],
+      )
+
+      if (contactResult.rows.length === 0) {
+        return null
+      }
+
+      const contact = contactResult.rows[0]
+
+      await client.query(
+        'UPDATE contacts SET is_primary = false WHERE organization_id = $1',
+        [contact.organization_id],
+      )
+
+      const result = await client.query(
+        'UPDATE contacts SET is_primary = true WHERE id = $1 RETURNING *',
+        [id],
+      )
+
+      return result.rows[0] || null
+    })
+  }
 }

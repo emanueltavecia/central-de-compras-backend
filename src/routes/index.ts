@@ -3,12 +3,14 @@ import { healthRoutes, healthSwaggerPaths } from './health.routes'
 import { authRoutes, authSwaggerPaths } from './auth.routes'
 import { campaignsRoutes, campaignsSwaggerPaths } from './campaigns.routes'
 import { productRoutes, productSwaggerPaths } from './product.routes'
+import { contactsRoutes, contactsSwaggerPaths } from './contacts.routes'
 
 export function registerRoutes(app: Express) {
   app.use(healthRoutes)
   app.use(authRoutes)
   app.use(campaignsRoutes)
   app.use(productRoutes)
+  app.use(contactsRoutes)
 }
 
 export const swaggerPaths = {
@@ -16,4 +18,5 @@ export const swaggerPaths = {
   auth: authSwaggerPaths,
   campaigns: campaignsSwaggerPaths,
   product: productSwaggerPaths,
+  contacts: contactsSwaggerPaths,
 }
