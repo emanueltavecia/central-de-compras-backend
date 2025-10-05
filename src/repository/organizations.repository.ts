@@ -1,77 +1,62 @@
-// src/repositories/organizations.repository.ts
 import { BaseRepository } from './base.repository'
 import { OrganizationSchema, UserSchema } from '@/schemas'
+import { PoolClient } from '@/database'
 
 export class OrganizationsRepository extends BaseRepository {
+  private toSnakeCase(str: string): string {
+    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
+
   async findAll(filters?: {
     type?: string
     active?: boolean
   }): Promise<OrganizationSchema[]> {
-    let query = `
-      SELECT 
-        o.id,
-        o.name,
-        o.type,
-        o.email,
-        o.phone,
-        o.document,
-        o.active,
-        o.created_by,
-        o.created_at
-      FROM organizations o
-      WHERE 1=1
-    `
+    const conditions: string[] = []
     const params: any[] = []
+    let paramIndex = 1
 
     if (filters?.type) {
+      conditions.push(`type = $${paramIndex}`)
       params.push(filters.type)
-      query += ` AND o.type = $${params.length}`
+      paramIndex++
     }
 
     if (filters?.active !== undefined) {
+      conditions.push(`active = $${paramIndex}`)
       params.push(filters.active)
-      query += ` AND o.active = $${params.length}`
+      paramIndex++
     }
 
-    query += ` ORDER BY o.created_at DESC`
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const query = `SELECT * FROM organizations ${whereClause} ORDER BY created_at DESC`
 
     return this.executeQuery<OrganizationSchema>(query, params)
   }
 
   async findById(id: string): Promise<OrganizationSchema | null> {
-    const query = `
-      SELECT 
-        o.id,
-        o.name,
-        o.type,
-        o.email,
-        o.phone,
-        o.document,
-        o.active,
-        o.created_by,
-        o.created_at
-      FROM organizations o
-      WHERE o.id = $1
-    `
+    const query = 'SELECT * FROM organizations WHERE id = $1'
     const result = await this.executeQuery<OrganizationSchema>(query, [id])
-    return result.length > 0 ? result[0] : null
+    return result[0] || null
   }
 
   async create(
-    orgData: Partial<OrganizationSchema>,
+    orgData: Omit<OrganizationSchema, 'id' | 'createdAt' | 'createdBy'>,
     createdBy: string,
   ): Promise<OrganizationSchema> {
     const query = `
-      INSERT INTO organizations (name, type, email, phone, document, active, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, name, type, email, phone, document, active, created_by, created_at
+      INSERT INTO organizations (legal_name, trade_name, type, email, phone, tax_id, website, active, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
     `
     const result = await this.executeQuery<OrganizationSchema>(query, [
-      orgData.legalName,
+      orgData.legalName || null,
+      orgData.tradeName || null,
       orgData.type,
       orgData.email || null,
       orgData.phone || null,
       orgData.taxId || null,
+      orgData.website || null,
       orgData.active ?? true,
       createdBy,
     ])
@@ -80,59 +65,60 @@ export class OrganizationsRepository extends BaseRepository {
 
   async update(
     id: string,
-    orgData: Partial<OrganizationSchema>,
-  ): Promise<OrganizationSchema> {
-    const query = `
-      UPDATE organizations
-      SET 
-        name = COALESCE($1, name),
-        type = COALESCE($2, type),
-        email = COALESCE($3, email),
-        phone = COALESCE($4, phone),
-        document = COALESCE($5, document),
-        active = COALESCE($6, active)
-      WHERE id = $7
-      RETURNING id, name, type, email, phone, document, active, created_by, created_at
-    `
-    const result = await this.executeQuery<OrganizationSchema>(query, [
-      orgData.legalName ?? null,
-      orgData.type ?? null,
-      orgData.email ?? null,
-      orgData.phone ?? null,
-      orgData.taxId ?? null,
-      orgData.active ?? null,
-      id,
-    ])
-    return result[0]
+    orgData: Partial<
+      Omit<OrganizationSchema, 'id' | 'createdAt' | 'createdBy'>
+    >,
+  ): Promise<OrganizationSchema | null> {
+    const fields: string[] = []
+    const params: any[] = []
+    let paramIndex = 1
+
+    Object.entries(orgData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        const snakeKey = this.toSnakeCase(key)
+        fields.push(`${snakeKey} = $${paramIndex}`)
+        params.push(value)
+        paramIndex++
+      }
+    })
+
+    if (fields.length === 0) return null
+
+    params.push(id)
+    const query = `UPDATE organizations SET ${fields.join(', ')} WHERE id = $${params.length} RETURNING *`
+
+    const result = await this.executeQuery<OrganizationSchema>(query, params)
+    return result[0] || null
   }
 
   async hasRelations(id: string): Promise<boolean> {
-    const query = `
-      SELECT COUNT(*) AS total
-      FROM users
-      WHERE organization_id = $1
-    `
+    const query =
+      'SELECT COUNT(*) AS total FROM users WHERE organization_id = $1'
     const result = await this.executeQuery<{ total: string }>(query, [id])
     return parseInt(result[0].total, 10) > 0
   }
 
-  async deletePermanent(id: string): Promise<void> {
-    const query = `DELETE FROM organizations WHERE id = $1`
-    await this.executeQuery(query, [id])
+  async deletePermanent(id: string): Promise<boolean> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      const result = await client.query(
+        'DELETE FROM organizations WHERE id = $1',
+        [id],
+      )
+      return (result.rowCount || 0) > 0
+    })
   }
 
-  async updateStatus(id: string, active: boolean): Promise<OrganizationSchema> {
-    const query = `
-      UPDATE organizations
-      SET active = $1
-      WHERE id = $2
-      RETURNING id, name, type, email, phone, document, active, created_by, created_at
-    `
+  async updateStatus(
+    id: string,
+    active: boolean,
+  ): Promise<OrganizationSchema | null> {
+    const query =
+      'UPDATE organizations SET active = $1 WHERE id = $2 RETURNING *'
     const result = await this.executeQuery<OrganizationSchema>(query, [
       active,
       id,
     ])
-    return result[0]
+    return result[0] || null
   }
 
   async findUsers(id: string): Promise<Partial<UserSchema>[]> {
@@ -152,9 +138,9 @@ export class OrganizationsRepository extends BaseRepository {
     return this.executeQuery(query, [id])
   }
 
-  async checkExistsByDocument(document: string): Promise<boolean> {
-    const query = 'SELECT 1 FROM organizations WHERE document = $1'
-    const result = await this.executeQuery(query, [document])
+  async checkExistsByDocument(taxId: string): Promise<boolean> {
+    const query = 'SELECT 1 FROM organizations WHERE tax_id = $1'
+    const result = await this.executeQuery(query, [taxId])
     return result.length > 0
   }
 
