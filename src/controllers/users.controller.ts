@@ -9,7 +9,7 @@ import {
   SuccessResponseSchema,
   PermissionSchema,
 } from '@/schemas'
-import { UsersService } from '@/services/users.service'
+import { UsersService } from '@/services'
 
 const usersService = new UsersService()
 
