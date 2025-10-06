@@ -1,8 +1,7 @@
-import { UsersRepository } from '@/repository/users.repository'
-import { OrganizationsRepository } from '@/repository/organizations.repository'
+import { UsersRepository, OrganizationsRepository } from '@/repository'
 import bcrypt from 'bcryptjs'
 import { UserSchema } from '@/schemas'
-import { UserAccountStatus } from '@/enums'
+import { UserAccountStatus, UserRole } from '@/enums'
 import { HttpError } from '@/utils'
 
 export class UsersService {
@@ -126,7 +125,7 @@ export class UsersService {
     if (!user)
       throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
 
-    if (user.role?.name === 'admin') {
+    if (user.role?.name === UserRole.ADMIN) {
       throw new HttpError(
         'Não é possível alterar o status de um admin',
         400,

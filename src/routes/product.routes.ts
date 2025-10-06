@@ -1,6 +1,6 @@
 import { Router, Router as ExpressRouter } from 'express'
 import { registerController } from '@/decorators'
-import { ProductController } from '@/controllers/product.controller'
+import { ProductController } from '@/controllers'
 
 export const productRoutes: ExpressRouter = Router()
 

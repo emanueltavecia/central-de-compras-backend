@@ -1,5 +1,8 @@
 import { BaseRepository } from './base.repository'
-import { PaymentConditionSchema, PaymentConditionFiltersSchema } from '@/schemas'
+import {
+  PaymentConditionSchema,
+  PaymentConditionFiltersSchema,
+} from '@/schemas'
 
 export class PaymentConditionsRepository extends BaseRepository {
   async create(
@@ -19,7 +22,10 @@ export class PaymentConditionsRepository extends BaseRepository {
       data.notes || null,
       true,
     ]
-    const result = await this.executeQuery<PaymentConditionSchema>(query, params)
+    const result = await this.executeQuery<PaymentConditionSchema>(
+      query,
+      params,
+    )
     return result[0]
   }
 
@@ -89,7 +95,10 @@ export class PaymentConditionsRepository extends BaseRepository {
     params.push(id)
     const query = `UPDATE payment_conditions SET ${fields.join(', ')} WHERE id = $${params.length} RETURNING *`
 
-    const result = await this.executeQuery<PaymentConditionSchema>(query, params)
+    const result = await this.executeQuery<PaymentConditionSchema>(
+      query,
+      params,
+    )
     return result[0] || null
   }
 
@@ -103,6 +112,3 @@ export class PaymentConditionsRepository extends BaseRepository {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
   }
 }
-
-
-

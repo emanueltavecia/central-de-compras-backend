@@ -9,7 +9,9 @@ INSERT INTO permissions (name, description) VALUES
   ('create_orders', 'Permite criar novos pedidos'),
   ('manage_orders', 'Permite gerenciar pedidos (separar, enviar, confirmar, cancelar)'),
   ('manage_campaigns', 'Permite criar e gerenciar campanhas promocionais'),
-  ('manage_conditions', 'Permite cadastrar e gerenciar condições comerciais');
+  ('manage_conditions', 'Permite cadastrar e gerenciar condições comerciais'),
+  ('manage_supplier_conditions', 'Permite gerenciar condições por estado dos fornecedores'),
+  ('manage_organizations', 'Permite gerenciar organizações (lojas, fornecedores, central)');
 
 INSERT INTO roles (name, description) VALUES
   ('admin', 'Administrador da Central de Compras - controla todo o sistema'),
@@ -26,7 +28,7 @@ WHERE r.name = 'store';
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r
-JOIN permissions p ON p.name IN ('manage_products','view_orders','manage_orders','manage_campaigns','manage_conditions')
+JOIN permissions p ON p.name IN ('manage_products','view_orders','manage_orders','manage_campaigns','manage_conditions', 'manage_supplier_conditions')
 WHERE r.name = 'supplier';
 
 -- ORGANIZAÇÕES DE EXEMPLO
@@ -45,7 +47,7 @@ INSERT INTO users (email, password, full_name, phone, role_id, organization_id, 
     'Administrador Central',
     '48999999999',
     (SELECT id FROM roles WHERE name = 'admin'),
-    (SELECT id FROM organizations WHERE tax_id = 'central'),
+    (SELECT id FROM organizations WHERE tax_id = '12345678000100'),
     'active'
   ),
   (
