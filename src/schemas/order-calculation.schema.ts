@@ -292,6 +292,16 @@ export class OrderCalculationRequestSchema {
   paymentConditionId?: string
 
   @ApiProperty({
+    description: 'Estado da loja para aplicar condições regionais',
+    example: 'SP',
+    type: 'string',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  storeState?: string
+
+  @ApiProperty({
     description: 'Itens do pedido para cálculo',
     type: 'array',
     schema: OrderItemSchema,
@@ -364,6 +374,17 @@ export class OrderCalculationResponseSchema {
   )
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   totalCashback: number
+
+  @ApiProperty({
+    description: 'ID da condição de estado do fornecedor aplicada',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  appliedSupplierStateConditionId?: string
 
   @ApiProperty({
     description: 'Detalhes dos ajustes aplicados',
