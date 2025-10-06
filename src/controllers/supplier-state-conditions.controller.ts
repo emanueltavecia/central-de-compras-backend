@@ -4,8 +4,11 @@ import { PermissionName } from '@/enums'
 import { AuthenticatedRequest } from '@/middlewares'
 import {
   SupplierStateConditionSchema,
+  SupplierStateConditionFiltersSchema,
+  SupplierStateParamsSchema,
   ErrorResponseSchema,
   SuccessResponseSchema,
+  IdParamSchema,
 } from '@/schemas'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
 import { SupplierStateConditionsService } from '@/services'
@@ -18,10 +21,11 @@ export class SupplierStateConditionsController {
     method: 'get',
     path: '/',
     summary: 'Listar condições por estado do fornecedor',
-    permissions: [PermissionName.VIEW_SUPPLIER_CONDITIONS],
+    query: SupplierStateConditionFiltersSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: SupplierStateConditionSchema,
+        isArray: true,
         dataDescription: 'Lista de condições por estado',
         message: 'Condições obtidas com sucesso',
       }),
@@ -33,12 +37,9 @@ export class SupplierStateConditionsController {
   async getSupplierStateConditions(req: AuthenticatedRequest, res: Response) {
     try {
       const currentUser = req.user!
-      const { supplierOrgId, state } = req.query
+      const filters = req.query as SupplierStateConditionFiltersSchema
 
-      const conditions = await this.service.getAll(currentUser, {
-        supplierOrgId: supplierOrgId as string | undefined,
-        state: state as string | undefined,
-      })
+      const conditions = await this.service.getAll(currentUser, filters)
 
       return res
         .status(200)
@@ -56,7 +57,7 @@ export class SupplierStateConditionsController {
     method: 'get',
     path: '/:id',
     summary: 'Obter condição por estado específica',
-    permissions: [PermissionName.VIEW_SUPPLIER_CONDITIONS],
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: SupplierStateConditionSchema,
@@ -75,16 +76,6 @@ export class SupplierStateConditionsController {
       const currentUser = req.user!
 
       const condition = await this.service.getById(id, currentUser)
-      if (!condition) {
-        return res
-          .status(404)
-          .json(
-            createErrorResponse(
-              'Condição não encontrada',
-              'CONDITION_NOT_FOUND',
-            ),
-          )
-      }
 
       return res
         .status(200)
@@ -115,10 +106,12 @@ export class SupplierStateConditionsController {
       500: ErrorResponseSchema,
     },
   })
-  async createSupplierStateCondition(req: AuthenticatedRequest, res: Response) {
+  async createSupplierStateCondition(
+    conditionData: SupplierStateConditionSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
-      const conditionData = req.body as SupplierStateConditionSchema
-
       const newCondition = await this.service.create(conditionData)
 
       return res
@@ -138,6 +131,7 @@ export class SupplierStateConditionsController {
     path: '/:id',
     summary: 'Atualizar condição por estado',
     permissions: [PermissionName.MANAGE_SUPPLIER_CONDITIONS],
+    params: IdParamSchema,
     body: SupplierStateConditionSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -152,10 +146,13 @@ export class SupplierStateConditionsController {
       500: ErrorResponseSchema,
     },
   })
-  async updateSupplierStateCondition(req: AuthenticatedRequest, res: Response) {
+  async updateSupplierStateCondition(
+    conditionData: SupplierStateConditionSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
       const { id } = req.params
-      const conditionData = req.body as SupplierStateConditionSchema
       const currentUser = req.user!
 
       const updatedCondition = await this.service.update(
@@ -184,6 +181,7 @@ export class SupplierStateConditionsController {
     path: '/:id',
     summary: 'Deletar condição por estado',
     permissions: [PermissionName.MANAGE_SUPPLIER_CONDITIONS],
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: SupplierStateConditionSchema,
@@ -217,7 +215,7 @@ export class SupplierStateConditionsController {
     method: 'get',
     path: '/by-supplier/:supplierOrgId/state/:state',
     summary: 'Obter condições de um fornecedor para um estado específico',
-    permissions: [PermissionName.VIEW_SUPPLIER_CONDITIONS],
+    params: SupplierStateParamsSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: SupplierStateConditionSchema,
@@ -241,17 +239,6 @@ export class SupplierStateConditionsController {
         supplierOrgId,
         state,
       )
-
-      if (!condition) {
-        return res
-          .status(404)
-          .json(
-            createErrorResponse(
-              'Condições não encontradas para este fornecedor e estado',
-              'CONDITIONS_NOT_FOUND',
-            ),
-          )
-      }
 
       return res
         .status(200)

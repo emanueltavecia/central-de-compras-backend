@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { ApiController, ApiRoute } from '@/decorators'
-import { OrgType, PermissionName } from '@/enums'
+import { OrgType, PermissionName, UserRole } from '@/enums'
 import { AuthenticatedRequest } from '@/middlewares'
 import {
   OrganizationSchema,
@@ -22,7 +22,6 @@ export class OrganizationsController {
     method: 'get',
     path: '/',
     summary: 'Listar organizações',
-    permissions: [PermissionName.VIEW_ORGANIZATIONS],
     query: OrganizationFiltersSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -43,12 +42,12 @@ export class OrganizationsController {
 
       let filters: OrganizationFiltersSchema = {}
 
-      if (currentUser.role?.name === 'admin') {
+      if (currentUser.role?.name === UserRole.ADMIN) {
         filters = {
           type: type,
           active,
         }
-      } else if (currentUser.role?.name === 'store') {
+      } else if (currentUser.role?.name === UserRole.STORE) {
         filters = {
           type: OrgType.SUPPLIER,
           active,
@@ -85,7 +84,6 @@ export class OrganizationsController {
     method: 'get',
     path: '/:id',
     summary: 'Obter organização específica',
-    permissions: [PermissionName.VIEW_ORGANIZATIONS],
     params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -300,10 +298,6 @@ export class OrganizationsController {
     method: 'get',
     path: '/:id/users',
     summary: 'Listar usuários da organização',
-    permissions: [
-      PermissionName.VIEW_ORGANIZATIONS,
-      PermissionName.MANAGE_USERS,
-    ],
     params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -324,7 +318,7 @@ export class OrganizationsController {
       const currentUser = req.user!
 
       if (
-        currentUser.role.name !== 'admin' &&
+        currentUser.role.name !== UserRole.ADMIN &&
         currentUser.organizationId !== id
       ) {
         return res

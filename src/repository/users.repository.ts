@@ -1,6 +1,7 @@
 import { HttpError } from '@/utils'
 import { BaseRepository } from './base.repository'
 import { UserSchema } from '@/schemas'
+import { UserRole } from '@/enums'
 
 export class UsersRepository extends BaseRepository {
   async getRoleIdByName(roleName: string): Promise<string> {
@@ -263,7 +264,7 @@ export class UsersRepository extends BaseRepository {
     if (!user)
       throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
 
-    if (user.role?.name === 'admin') {
+    if (user.role?.name === UserRole.ADMIN) {
       throw new HttpError(
         'Não é possível excluir usuário admin',
         400,

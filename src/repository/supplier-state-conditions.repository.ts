@@ -1,7 +1,8 @@
 import { BaseRepository } from './base.repository'
-import { SupplierStateConditionSchema } from '@/schemas'
-import { AuthenticatedRequest } from '@/middlewares'
+import { SupplierStateConditionSchema, UserSchema } from '@/schemas'
+import { PoolClient } from '@/database'
 import { HttpError } from '@/utils'
+import { UserRole } from '@/enums'
 
 interface FindAllFilters {
   supplierOrgId?: string
@@ -11,61 +12,44 @@ interface FindAllFilters {
 }
 
 export class SupplierStateConditionsRepository extends BaseRepository {
+  private toSnakeCase(str: string): string {
+    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
   async findAll(
     filters: FindAllFilters,
   ): Promise<SupplierStateConditionSchema[]> {
-    let query = `
-      SELECT 
-        id,
-        supplier_org_id as "supplierOrgId",
-        state,
-        cashback_percent as "cashbackPercent",
-        payment_term_days as "paymentTermDays",
-        unit_price_adjustment as "unitPriceAdjustment",
-        effective_from as "effectiveFrom",
-        effective_to as "effectiveTo",
-        created_at as "createdAt"
-      FROM supplier_state_conditions
-      WHERE 1=1
-    `
+    const conditions: string[] = []
     const params: any[] = []
+    let paramIndex = 1
 
     if (filters.isSupplier && filters.userOrgId) {
+      conditions.push(`supplier_org_id = $${paramIndex}`)
       params.push(filters.userOrgId)
-      query += ` AND supplier_org_id = $${params.length}`
+      paramIndex++
     } else if (filters.supplierOrgId) {
+      conditions.push(`supplier_org_id = $${paramIndex}`)
       params.push(filters.supplierOrgId)
-      query += ` AND supplier_org_id = $${params.length}`
+      paramIndex++
     }
 
     if (filters.state) {
+      conditions.push(`state = $${paramIndex}`)
       params.push(filters.state)
-      query += ` AND state = $${params.length}`
+      paramIndex++
     }
 
-    query += ` ORDER BY created_at DESC`
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const query = `SELECT * FROM supplier_state_conditions ${whereClause} ORDER BY created_at DESC`
 
     return this.executeQuery<SupplierStateConditionSchema>(query, params)
   }
 
   async findById(
     id: string,
-    currentUser: AuthenticatedRequest['user'],
+    currentUser: UserSchema,
   ): Promise<SupplierStateConditionSchema | null> {
-    const query = `
-      SELECT 
-        id,
-        supplier_org_id as "supplierOrgId",
-        state,
-        cashback_percent as "cashbackPercent",
-        payment_term_days as "paymentTermDays",
-        unit_price_adjustment as "unitPriceAdjustment",
-        effective_from as "effectiveFrom",
-        effective_to as "effectiveTo",
-        created_at as "createdAt"
-      FROM supplier_state_conditions
-      WHERE id = $1
-    `
+    const query = 'SELECT * FROM supplier_state_conditions WHERE id = $1'
     const result = await this.executeQuery<SupplierStateConditionSchema>(
       query,
       [id],
@@ -76,7 +60,7 @@ export class SupplierStateConditionsRepository extends BaseRepository {
     const condition = result[0]
 
     if (
-      currentUser!.role?.name === 'SUPPLIER' &&
+      currentUser!.role?.name === UserRole.SUPPLIER &&
       condition.supplierOrgId !== currentUser!.organizationId
     ) {
       throw new HttpError('Acesso negado', 403, 'FORBIDDEN')
@@ -86,7 +70,7 @@ export class SupplierStateConditionsRepository extends BaseRepository {
   }
 
   async create(
-    conditionData: SupplierStateConditionSchema,
+    conditionData: Omit<SupplierStateConditionSchema, 'id' | 'createdAt'>,
   ): Promise<SupplierStateConditionSchema> {
     const existsQuery = `
       SELECT 1 
@@ -116,16 +100,7 @@ export class SupplierStateConditionsRepository extends BaseRepository {
         effective_to
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING 
-        id,
-        supplier_org_id as "supplierOrgId",
-        state,
-        cashback_percent as "cashbackPercent",
-        payment_term_days as "paymentTermDays",
-        unit_price_adjustment as "unitPriceAdjustment",
-        effective_from as "effectiveFrom",
-        effective_to as "effectiveTo",
-        created_at as "createdAt"
+      RETURNING *
     `
     const result = await this.executeQuery<SupplierStateConditionSchema>(
       query,
@@ -145,60 +120,58 @@ export class SupplierStateConditionsRepository extends BaseRepository {
 
   async update(
     id: string,
-    conditionData: SupplierStateConditionSchema,
-    currentUser: AuthenticatedRequest['user'],
-  ): Promise<SupplierStateConditionSchema> {
+    conditionData: Partial<
+      Omit<SupplierStateConditionSchema, 'id' | 'createdAt'>
+    >,
+    currentUser: UserSchema,
+  ): Promise<SupplierStateConditionSchema | null> {
     const existing = await this.findById(id, currentUser)
     if (!existing) {
       throw new HttpError('Condição não encontrada', 404, 'CONDITION_NOT_FOUND')
     }
 
-    const query = `
-      UPDATE supplier_state_conditions
-      SET
-        cashback_percent = COALESCE($1, cashback_percent),
-        payment_term_days = COALESCE($2, payment_term_days),
-        unit_price_adjustment = COALESCE($3, unit_price_adjustment),
-        effective_from = COALESCE($4, effective_from),
-        effective_to = COALESCE($5, effective_to)
-      WHERE id = $6
-      RETURNING 
-        id,
-        supplier_org_id as "supplierOrgId",
-        state,
-        cashback_percent as "cashbackPercent",
-        payment_term_days as "paymentTermDays",
-        unit_price_adjustment as "unitPriceAdjustment",
-        effective_from as "effectiveFrom",
-        effective_to as "effectiveTo",
-        created_at as "createdAt"
-    `
+    const fields: string[] = []
+    const params: any[] = []
+    let paramIndex = 1
+
+    Object.entries(conditionData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        const snakeKey = this.toSnakeCase(key)
+        fields.push(`${snakeKey} = $${paramIndex}`)
+        params.push(value)
+        paramIndex++
+      }
+    })
+
+    if (fields.length === 0) return existing
+
+    params.push(id)
+    const query = `UPDATE supplier_state_conditions SET ${fields.join(', ')} WHERE id = $${params.length} RETURNING *`
+
     const result = await this.executeQuery<SupplierStateConditionSchema>(
       query,
-      [
-        conditionData.cashbackPercent ?? null,
-        conditionData.paymentTermDays ?? null,
-        conditionData.unitPriceAdjustment ?? null,
-        conditionData.effectiveFrom ?? null,
-        conditionData.effectiveTo ?? null,
-        id,
-      ],
+      params,
     )
-
-    return result[0]
+    return result[0] || null
   }
 
-  async delete(
-    id: string,
-    currentUser: AuthenticatedRequest['user'],
-  ): Promise<void> {
-    const existing = await this.findById(id, currentUser)
-    if (!existing) {
-      throw new HttpError('Condição não encontrada', 404, 'CONDITION_NOT_FOUND')
-    }
+  async delete(id: string, currentUser: UserSchema): Promise<boolean> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      const existing = await this.findById(id, currentUser)
+      if (!existing) {
+        throw new HttpError(
+          'Condição não encontrada',
+          404,
+          'CONDITION_NOT_FOUND',
+        )
+      }
 
-    const query = `DELETE FROM supplier_state_conditions WHERE id = $1`
-    await this.executeQuery(query, [id])
+      const result = await client.query(
+        'DELETE FROM supplier_state_conditions WHERE id = $1',
+        [id],
+      )
+      return (result.rowCount || 0) > 0
+    })
   }
 
   async findBySupplierAndState(
@@ -206,17 +179,7 @@ export class SupplierStateConditionsRepository extends BaseRepository {
     state: string,
   ): Promise<SupplierStateConditionSchema | null> {
     const query = `
-      SELECT 
-        id,
-        supplier_org_id as "supplierOrgId",
-        state,
-        cashback_percent as "cashbackPercent",
-        payment_term_days as "paymentTermDays",
-        unit_price_adjustment as "unitPriceAdjustment",
-        effective_from as "effectiveFrom",
-        effective_to as "effectiveTo",
-        created_at as "createdAt"
-      FROM supplier_state_conditions
+      SELECT * FROM supplier_state_conditions
       WHERE supplier_org_id = $1
         AND state = $2
         AND (effective_from IS NULL OR effective_from <= NOW())

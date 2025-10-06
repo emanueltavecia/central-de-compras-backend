@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer'
 import { ApiProperty } from '@/decorators'
 import { PermissionSchema } from './permission.schema'
+import { UserRole } from '@/enums'
 
 export class RoleSchema {
   @ApiProperty({
@@ -14,12 +15,13 @@ export class RoleSchema {
 
   @ApiProperty({
     description: 'Nome da role',
-    example: 'Admin',
+    example: UserRole.ADMIN,
     type: 'string',
+    enum: UserRole,
     required: true,
     readOnly: true,
   })
-  name: string
+  name: UserRole
 
   @ApiProperty({
     description: 'Descrição da role',
