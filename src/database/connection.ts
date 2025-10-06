@@ -1,5 +1,12 @@
-import { Pool, PoolClient } from 'pg'
+import { Pool, PoolClient, types } from 'pg'
+import { Decimal } from 'decimal.js'
 import { config } from '@/config'
+
+const NUMERIC_TYPE_OID = 1700
+
+types.setTypeParser(NUMERIC_TYPE_OID, (val: string) =>
+  val === null ? null : new Decimal(val).toNumber(),
+)
 
 class Database {
   private pool: Pool
