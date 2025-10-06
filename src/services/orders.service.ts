@@ -48,9 +48,9 @@ export class OrdersService {
       const cleanData = this.removeReadOnlyFields(orderData as OrderSchema)
 
       if (cleanData.items && cleanData.items.length > 0) {
-        const calculationRequest = {
-          storeOrgId: cleanData.storeOrgId,
-          supplierOrgId: cleanData.supplierOrgId,
+        const calculationRequest: OrderCalculationRequestSchema = {
+          storeOrgId: cleanData.storeOrgId!,
+          supplierOrgId: cleanData.supplierOrgId!,
           shippingAddressId: cleanData.shippingAddressId,
           paymentConditionId: cleanData.paymentConditionId,
           items: cleanData.items,
@@ -63,38 +63,20 @@ export class OrdersService {
         cleanData.shippingCost = calculatedValues.shippingCost
         cleanData.adjustments = calculatedValues.adjustments
         cleanData.totalAmount = calculatedValues.totalAmount
-      }
-
-      const createdOrder = await this.ordersRepository.create(cleanData)
-
-      if (cleanData.items && cleanData.items.length > 0) {
-        const calculationRequest = {
-          storeOrgId: cleanData.storeOrgId,
-          supplierOrgId: cleanData.supplierOrgId,
-          shippingAddressId: cleanData.shippingAddressId,
-          paymentConditionId: cleanData.paymentConditionId,
-          items: cleanData.items,
-        }
-
-        const calculatedValues =
-          await this.calculateOrderValues(calculationRequest)
 
         if (
           calculatedValues.totalCashback > 0 ||
           calculatedValues.appliedSupplierStateConditionId
         ) {
-          await this.ordersRepository.updateCashbackAndStateCondition(
-            createdOrder.id,
-            calculatedValues.totalCashback,
-            calculatedValues.appliedSupplierStateConditionId,
-          )
-
-          return (
-            (await this.ordersRepository.findById(createdOrder.id)) ||
-            createdOrder
-          )
+          cleanData.totalCashback = calculatedValues.totalCashback
+          cleanData.appliedSupplierStateConditionId =
+            calculatedValues.appliedSupplierStateConditionId
         }
       }
+
+      const createdOrder = await this.ordersRepository.create(
+        cleanData as OrderSchema,
+      )
 
       return createdOrder
     } catch (error) {
@@ -349,6 +331,9 @@ export class OrdersService {
         calculatedItems,
       }
     } catch (error) {
+      if (error instanceof HttpError) {
+        throw error
+      }
       console.error('Error calculating order values:', error)
       throw new HttpError(
         'Erro ao calcular valores do pedido',
@@ -378,6 +363,9 @@ export class OrdersService {
     }
 
     if (campaign.scope === CampaignScope.CATEGORY && campaign.categoryId) {
+      // TODO: Add category check when product-category relationship is available
+      // For now, we'll assume category scope campaigns apply to all products
+      console.warn('Category scope campaign check not implemented yet')
     }
 
     if (campaign.scope === CampaignScope.PRODUCT && campaign.productIds) {
@@ -387,6 +375,14 @@ export class OrdersService {
       if (!hasApplicableProduct) {
         return false
       }
+    }
+
+    const now = new Date()
+    if (campaign.startAt && new Date(campaign.startAt) > now) {
+      return false
+    }
+    if (campaign.endAt && new Date(campaign.endAt) < now) {
+      return false
     }
 
     return true

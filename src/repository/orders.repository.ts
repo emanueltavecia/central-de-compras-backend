@@ -34,8 +34,8 @@ export class OrdersRepository extends BaseRepository {
         INSERT INTO orders (
           store_org_id, supplier_org_id, status, shipping_address_id,
           subtotal_amount, shipping_cost, adjustments, total_amount,
-          payment_condition_id, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          payment_condition_id, created_by, total_cashback, applied_supplier_state_condition_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
       `
 
@@ -50,6 +50,8 @@ export class OrdersRepository extends BaseRepository {
         order.totalAmount ?? 0,
         order.paymentConditionId ?? null,
         order.createdBy ?? null,
+        order.totalCashback ?? 0,
+        order.appliedSupplierStateConditionId ?? null,
       ]
 
       const orderResult = await client.query(orderQuery, orderParams)
@@ -58,14 +60,14 @@ export class OrdersRepository extends BaseRepository {
       if (order.items && order.items.length > 0) {
         const itemInserts = order.items
           .map((_, index) => {
-            const baseIndex = index * 5
-            return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5})`
+            const baseIndex = index * 6
+            return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`
           })
           .join(', ')
 
         const itemQuery = `
           INSERT INTO order_items (
-            order_id, product_id, quantity, unit_price, total_price
+            order_id, product_id, quantity, unit_price, total_price, applied_cashback_amount
           ) VALUES ${itemInserts}
         `
 
@@ -76,6 +78,7 @@ export class OrdersRepository extends BaseRepository {
             item.quantity.toString(),
             item.unitPrice.toString(),
             item.totalPrice.toString(),
+            (item.appliedCashbackAmount ?? 0).toString(),
           )
         })
 
@@ -195,7 +198,13 @@ export class OrdersRepository extends BaseRepository {
       let paramIndex = 1
 
       Object.entries(order).forEach(([key, value]) => {
-        if (value !== undefined && key !== 'items') {
+        if (
+          value !== undefined &&
+          key !== 'items' &&
+          key !== 'id' &&
+          key !== 'createdAt' &&
+          key !== 'placedAt'
+        ) {
           const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
           fields.push(`${snakeKey} = $${paramIndex}`)
           params.push(value)
@@ -220,14 +229,14 @@ export class OrdersRepository extends BaseRepository {
         if (order.items.length > 0) {
           const itemInserts = order.items
             .map((_, index) => {
-              const baseIndex = index * 5
-              return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5})`
+              const baseIndex = index * 6
+              return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`
             })
             .join(', ')
 
           const itemQuery = `
             INSERT INTO order_items (
-              order_id, product_id, quantity, unit_price, total_price
+              order_id, product_id, quantity, unit_price, total_price, applied_cashback_amount
             ) VALUES ${itemInserts}
           `
 
@@ -238,6 +247,7 @@ export class OrdersRepository extends BaseRepository {
               item.quantity.toString(),
               item.unitPrice.toString(),
               item.totalPrice.toString(),
+              (item.appliedCashbackAmount ?? 0).toString(),
             )
           })
 
