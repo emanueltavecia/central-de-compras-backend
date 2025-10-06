@@ -4,11 +4,247 @@ import {
   IsUUID,
   ValidateNested,
   ArrayMinSize,
+  IsNumber,
+  IsString,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ApiProperty } from '@/decorators'
 import { OrderItemSchema } from './order-item.schema'
 import { VALIDATION_MESSAGES } from '@/utils'
+
+export class SupplierStateConditionAdjustmentSchema {
+  @ApiProperty({
+    description: 'ID da condição de estado',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  id: string
+
+  @ApiProperty({
+    description: 'Estado',
+    example: 'SP',
+    type: 'string',
+  })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  state: string
+
+  @ApiProperty({
+    description: 'Ajuste no preço unitário',
+    example: 1.15,
+    type: 'number',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 4 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  unitPriceAdjustment: number
+
+  @ApiProperty({
+    description: 'Percentual de cashback',
+    example: 2.5,
+    type: 'number',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  cashbackPercent: number
+}
+
+export class PaymentConditionAdjustmentSchema {
+  @ApiProperty({
+    description: 'ID da condição de pagamento',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  id: string
+
+  @ApiProperty({
+    description: 'Nome da condição de pagamento',
+    example: 'À vista',
+    type: 'string',
+  })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  name: string
+
+  @ApiProperty({
+    description: 'Método de pagamento',
+    example: 'PIX',
+    type: 'string',
+  })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  paymentMethod: string
+}
+
+export class CampaignAdjustmentSchema {
+  @ApiProperty({
+    description: 'ID da campanha',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  id: string
+
+  @ApiProperty({
+    description: 'Nome da campanha',
+    example: 'Cashback Primavera',
+    type: 'string',
+  })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  name: string
+
+  @ApiProperty({
+    description: 'Tipo da campanha',
+    example: 'CASHBACK',
+    type: 'string',
+  })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  type: string
+
+  @ApiProperty({
+    description: 'Percentual de cashback',
+    example: 5.0,
+    type: 'number',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  cashbackPercent?: number
+
+  @ApiProperty({
+    description: 'ID do produto brinde',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  giftProductId?: string
+}
+
+export class AdjustmentDetailsSchema {
+  @ApiProperty({
+    description: 'Condição de estado do fornecedor aplicada',
+    type: 'object',
+    schema: SupplierStateConditionAdjustmentSchema,
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SupplierStateConditionAdjustmentSchema)
+  supplierStateCondition?: SupplierStateConditionAdjustmentSchema
+
+  @ApiProperty({
+    description: 'Condição de pagamento aplicada',
+    type: 'object',
+    schema: PaymentConditionAdjustmentSchema,
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaymentConditionAdjustmentSchema)
+  paymentCondition?: PaymentConditionAdjustmentSchema
+
+  @ApiProperty({
+    description: 'Campanhas aplicadas',
+    type: 'array',
+    schema: CampaignAdjustmentSchema,
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CampaignAdjustmentSchema)
+  campaigns?: CampaignAdjustmentSchema[]
+}
+
+export class CalculatedItemSchema {
+  @ApiProperty({
+    description: 'ID do produto',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  productId: string
+
+  @ApiProperty({
+    description: 'Quantidade',
+    example: 2,
+    type: 'number',
+  })
+  @IsNumber(
+    { allowInfinity: false, allowNaN: false },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  quantity: number
+
+  @ApiProperty({
+    description: 'Preço unitário original',
+    example: 99.99,
+    type: 'number',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  unitPrice: number
+
+  @ApiProperty({
+    description: 'Preço unitário ajustado',
+    example: 89.99,
+    type: 'number',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  unitPriceAdjusted: number
+
+  @ApiProperty({
+    description: 'Preço total do item',
+    example: 179.98,
+    type: 'number',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  totalPrice: number
+
+  @ApiProperty({
+    description: 'Valor de cashback aplicado ao item',
+    example: 9.0,
+    type: 'number',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  appliedCashbackAmount: number
+}
 
 export class OrderCalculationRequestSchema {
   @ApiProperty({
@@ -74,6 +310,11 @@ export class OrderCalculationResponseSchema {
     example: 999.99,
     type: 'number',
   })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   subtotalAmount: number
 
   @ApiProperty({
@@ -81,6 +322,11 @@ export class OrderCalculationResponseSchema {
     example: 50.0,
     type: 'number',
   })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   shippingCost: number
 
   @ApiProperty({
@@ -88,6 +334,11 @@ export class OrderCalculationResponseSchema {
     example: -10.0,
     type: 'number',
   })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   adjustments: number
 
   @ApiProperty({
@@ -95,6 +346,11 @@ export class OrderCalculationResponseSchema {
     example: 1039.99,
     type: 'number',
   })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   totalAmount: number
 
   @ApiProperty({
@@ -102,43 +358,31 @@ export class OrderCalculationResponseSchema {
     example: 52.0,
     type: 'number',
   })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   totalCashback: number
 
   @ApiProperty({
     description: 'Detalhes dos ajustes aplicados',
     type: 'object',
+    schema: AdjustmentDetailsSchema,
   })
-  adjustmentDetails: {
-    supplierStateCondition?: {
-      id: string
-      state: string
-      unitPriceAdjustment: number
-      cashbackPercent: number
-    }
-    paymentCondition?: {
-      id: string
-      name: string
-      paymentMethod: string
-    }
-    campaigns?: Array<{
-      id: string
-      name: string
-      type: string
-      cashbackPercent?: number
-      giftProductId?: string
-    }>
-  }
+  @ValidateNested()
+  @Type(() => AdjustmentDetailsSchema)
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  adjustmentDetails: AdjustmentDetailsSchema
 
   @ApiProperty({
     description: 'Itens com valores calculados',
     type: 'array',
+    schema: CalculatedItemSchema,
   })
-  calculatedItems: Array<{
-    productId: string
-    quantity: number
-    unitPrice: number
-    unitPriceAdjusted: number
-    totalPrice: number
-    appliedCashbackAmount: number
-  }>
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @ArrayMinSize(1, { message: VALIDATION_MESSAGES.ARRAY_MIN_SIZE(1) })
+  @ValidateNested({ each: true })
+  @Type(() => CalculatedItemSchema)
+  calculatedItems: CalculatedItemSchema[]
 }

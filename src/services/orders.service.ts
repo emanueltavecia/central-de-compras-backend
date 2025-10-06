@@ -1,15 +1,17 @@
-import { 
+import {
   OrdersRepository,
   PaymentConditionsRepository,
-  CampaignsRepository 
+  CampaignsRepository,
 } from '@/repository'
-import { 
-  OrderSchema, 
-  OrderFiltersSchema, 
+import {
+  OrderSchema,
+  OrderFiltersSchema,
   OrderCalculationRequestSchema,
-  OrderCalculationResponseSchema 
+  OrderCalculationResponseSchema,
+  CampaignSchema,
+  AdjustmentDetailsSchema,
 } from '@/schemas'
-import { CampaignType } from '@/enums'
+import { CampaignScope, CampaignType } from '@/enums'
 import { HttpError } from '@/utils'
 
 export class OrdersService {
@@ -65,9 +67,7 @@ export class OrdersService {
     }
   }
 
-  async getAllOrders(
-    filters: OrderFiltersSchema = {},
-  ): Promise<OrderSchema[]> {
+  async getAllOrders(filters: OrderFiltersSchema = {}): Promise<OrderSchema[]> {
     try {
       const result = await this.ordersRepository.findAll(filters)
 
@@ -107,11 +107,7 @@ export class OrdersService {
         throw error
       }
       console.error('Error updating order:', error)
-      throw new HttpError(
-        'Erro ao atualizar pedido',
-        500,
-        'ORDER_UPDATE_ERROR',
-      )
+      throw new HttpError('Erro ao atualizar pedido', 500, 'ORDER_UPDATE_ERROR')
     }
   }
 
@@ -141,12 +137,11 @@ export class OrdersService {
     calculationData: OrderCalculationRequestSchema,
   ): Promise<OrderCalculationResponseSchema> {
     try {
-      // Calcular subtotal dos itens
       let subtotalAmount = 0
       let calculatedItems = calculationData.items.map((item) => {
         const itemTotal = item.unitPrice * item.quantity
         subtotalAmount += itemTotal
-        
+
         return {
           productId: item.productId,
           quantity: item.quantity,
@@ -159,42 +154,42 @@ export class OrdersService {
 
       let adjustments = 0
       let totalCashback = 0
-      const adjustmentDetails: any = {}
+      const adjustmentDetails: AdjustmentDetailsSchema = {}
 
-      // Buscar e aplicar PaymentCondition
       if (calculationData.paymentConditionId) {
         try {
-          const paymentCondition = await this.paymentConditionsRepository.findById(
-            calculationData.paymentConditionId
-          )
+          const paymentCondition =
+            await this.paymentConditionsRepository.findById(
+              calculationData.paymentConditionId,
+            )
           if (paymentCondition) {
             adjustmentDetails.paymentCondition = {
               id: paymentCondition.id,
               name: paymentCondition.name || 'Condição de pagamento',
               paymentMethod: paymentCondition.paymentMethod,
             }
-            // Aqui você pode implementar lógica específica de desconto por condição de pagamento
-            // Por exemplo: desconto de 5% para pagamento à vista
           }
         } catch (error) {
           console.warn('Error fetching payment condition:', error)
         }
       }
 
-      // Buscar e aplicar Campaigns ativas
       try {
         const campaigns = await this.campaignsRepository.findAll({
           supplierOrgId: calculationData.supplierOrgId,
           active: true,
         })
-        
+
         if (campaigns.campaigns && campaigns.campaigns.length > 0) {
           adjustmentDetails.campaigns = []
-          
+
           for (const campaign of campaigns.campaigns) {
-            // Verificar se a campanha se aplica ao pedido
-            const campaignApplies = this.checkCampaignApplies(campaign, calculationData, subtotalAmount)
-            
+            const campaignApplies = this.checkCampaignApplies(
+              campaign,
+              calculationData,
+              subtotalAmount,
+            )
+
             if (campaignApplies) {
               adjustmentDetails.campaigns.push({
                 id: campaign.id,
@@ -204,9 +199,12 @@ export class OrdersService {
                 giftProductId: campaign.giftProductId,
               })
 
-              // Aplicar cashback da campanha
-              if (campaign.type === CampaignType.CASHBACK && campaign.cashbackPercent) {
-                const campaignCashback = (subtotalAmount * campaign.cashbackPercent) / 100
+              if (
+                campaign.type === CampaignType.CASHBACK &&
+                campaign.cashbackPercent
+              ) {
+                const campaignCashback =
+                  (subtotalAmount * campaign.cashbackPercent) / 100
                 totalCashback += campaignCashback
               }
             }
@@ -216,10 +214,10 @@ export class OrdersService {
         console.warn('Error fetching campaigns:', error)
       }
 
-      // Aplicar cashback aos itens (distribuído proporcionalmente)
       if (totalCashback > 0) {
         calculatedItems = calculatedItems.map((item) => {
-          const itemCashback = (item.totalPrice / subtotalAmount) * totalCashback
+          const itemCashback =
+            (item.totalPrice / subtotalAmount) * totalCashback
           return {
             ...item,
             appliedCashbackAmount: Math.round(itemCashback * 100) / 100,
@@ -227,10 +225,8 @@ export class OrdersService {
         })
       }
 
-      // Calcular frete (implementação básica - pode ser expandida)
       const shippingCost = calculationData.shippingAddressId ? 25.0 : 0
 
-      // Calcular total final
       const totalAmount = subtotalAmount + shippingCost + adjustments
 
       return {
@@ -252,30 +248,31 @@ export class OrdersService {
     }
   }
 
-  private checkCampaignApplies(campaign: any, calculationData: OrderCalculationRequestSchema, subtotalAmount: number): boolean {
-    // Verificar valor mínimo
+  private checkCampaignApplies(
+    campaign: CampaignSchema,
+    calculationData: OrderCalculationRequestSchema,
+    subtotalAmount: number,
+  ): boolean {
     if (campaign.minTotal && subtotalAmount < campaign.minTotal) {
       return false
     }
 
-    // Verificar quantidade mínima
     if (campaign.minQuantity) {
-      const totalQuantity = calculationData.items.reduce((sum, item) => sum + item.quantity, 0)
+      const totalQuantity = calculationData.items.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      )
       if (totalQuantity < campaign.minQuantity) {
         return false
       }
     }
 
-    // Verificar escopo da campanha
-    if (campaign.scope === 'CATEGORY' && campaign.categoryId) {
-      // Aqui você precisaria verificar se algum item pertence à categoria
-      // Por simplicidade, assumindo que se aplica
+    if (campaign.scope === CampaignScope.CATEGORY && campaign.categoryId) {
     }
 
-    if (campaign.scope === 'PRODUCTS' && campaign.productIds) {
-      // Verificar se algum item está na lista de produtos da campanha
-      const hasApplicableProduct = calculationData.items.some(item => 
-        campaign.productIds.includes(item.productId)
+    if (campaign.scope === CampaignScope.PRODUCT && campaign.productIds) {
+      const hasApplicableProduct = calculationData.items.some((item) =>
+        campaign.productIds?.includes(item.productId),
       )
       if (!hasApplicableProduct) {
         return false

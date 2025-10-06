@@ -1,8 +1,9 @@
-import { Request, Response } from 'express'
+import { Response } from 'express'
 import { ApiController, ApiRoute } from '@/decorators'
 import { OrdersService } from '@/services'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
 import { AuthenticatedRequest } from '@/middlewares'
+import { PermissionName } from '@/enums'
 import {
   OrderSchema,
   OrderFiltersSchema,
@@ -26,6 +27,7 @@ export class OrdersController {
     path: '/',
     summary: 'Cadastrar um novo pedido',
     body: OrderSchema,
+    permissions: [PermissionName.CREATE_ORDERS],
     responses: {
       201: SuccessResponseSchema.create({
         schema: OrderSchema,
@@ -33,6 +35,8 @@ export class OrdersController {
         message: 'Pedido cadastrado com sucesso',
       }),
       400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
   })
@@ -64,6 +68,7 @@ export class OrdersController {
     path: '/',
     summary: 'Listar todos os pedidos com filtros',
     query: OrderFiltersSchema,
+    permissions: [PermissionName.VIEW_ORDERS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: OrderSchema,
@@ -72,10 +77,12 @@ export class OrdersController {
         message: 'Pedidos listados com sucesso',
       }),
       400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
   })
-  async getAllOrders(req: Request, res: Response) {
+  async getAllOrders(req: AuthenticatedRequest, res: Response) {
     try {
       const filters = req.query as OrderFiltersSchema
       const orders = await this.ordersService.getAllOrders(filters)
@@ -95,6 +102,7 @@ export class OrdersController {
     path: '/:id',
     summary: 'Buscar pedido por ID',
     params: IdParamSchema,
+    permissions: [PermissionName.VIEW_ORDERS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: OrderSchema,
@@ -102,11 +110,13 @@ export class OrdersController {
         message: 'Pedido encontrado',
       }),
       400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
       404: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
   })
-  async getOrderById(req: Request, res: Response) {
+  async getOrderById(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
       const order = await this.ordersService.getOrderById(id)
@@ -127,6 +137,7 @@ export class OrdersController {
     summary: 'Atualizar um pedido',
     params: IdParamSchema,
     body: OrderSchema,
+    permissions: [PermissionName.MANAGE_ORDERS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: OrderSchema,
@@ -134,13 +145,15 @@ export class OrdersController {
         message: 'Pedido atualizado com sucesso',
       }),
       400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
       404: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
   })
   async updateOrder(
     orderData: Partial<OrderSchema>,
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
   ) {
     try {
@@ -162,17 +175,20 @@ export class OrdersController {
     path: '/:id',
     summary: 'Excluir um pedido',
     params: IdParamSchema,
+    permissions: [PermissionName.MANAGE_ORDERS],
     responses: {
       200: SuccessResponseSchema.create({
         dataDescription: 'Confirmação de exclusão',
         message: 'Pedido excluído com sucesso',
       }),
       400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
       404: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
   })
-  async deleteOrder(req: Request, res: Response) {
+  async deleteOrder(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
       await this.ordersService.deleteOrder(id)
@@ -192,6 +208,7 @@ export class OrdersController {
     path: '/calculate',
     summary: 'Calcular valores do pedido antes de finalizar',
     body: OrderCalculationRequestSchema,
+    permissions: [PermissionName.CREATE_ORDERS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: OrderCalculationResponseSchema,
@@ -199,23 +216,27 @@ export class OrdersController {
         message: 'Valores calculados com sucesso',
       }),
       400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
       500: ErrorResponseSchema,
     },
   })
   async calculateOrderValues(
     calculationData: OrderCalculationRequestSchema,
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
   ) {
     try {
-      const calculatedValues = await this.ordersService.calculateOrderValues(
-        calculationData,
-      )
+      const calculatedValues =
+        await this.ordersService.calculateOrderValues(calculationData)
 
       return res
         .status(200)
         .json(
-          createSuccessResponse('Valores calculados com sucesso', calculatedValues),
+          createSuccessResponse(
+            'Valores calculados com sucesso',
+            calculatedValues,
+          ),
         )
     } catch (error: any) {
       return res
