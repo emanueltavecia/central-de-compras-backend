@@ -2,6 +2,8 @@ import {
   OrdersRepository,
   PaymentConditionsRepository,
   CampaignsRepository,
+  SupplierStateConditionsRepository,
+  ProductRepository,
 } from '@/repository'
 import {
   OrderSchema,
@@ -18,11 +20,16 @@ export class OrdersService {
   private ordersRepository: OrdersRepository
   private paymentConditionsRepository: PaymentConditionsRepository
   private campaignsRepository: CampaignsRepository
+  private supplierStateConditionsRepository: SupplierStateConditionsRepository
+  private productRepository: ProductRepository
 
   constructor() {
     this.ordersRepository = new OrdersRepository()
     this.paymentConditionsRepository = new PaymentConditionsRepository()
     this.campaignsRepository = new CampaignsRepository()
+    this.supplierStateConditionsRepository =
+      new SupplierStateConditionsRepository()
+    this.productRepository = new ProductRepository()
   }
 
   private removeReadOnlyFields(data: OrderSchema): OrderSchema {
@@ -42,7 +49,39 @@ export class OrdersService {
   ): Promise<OrderSchema> {
     try {
       const cleanData = this.removeReadOnlyFields(orderData as OrderSchema)
-      return await this.ordersRepository.create(cleanData)
+
+      if (cleanData.items && cleanData.items.length > 0) {
+        const calculationRequest: OrderCalculationRequestSchema = {
+          storeOrgId: cleanData.storeOrgId!,
+          supplierOrgId: cleanData.supplierOrgId!,
+          shippingAddressId: cleanData.shippingAddressId,
+          paymentConditionId: cleanData.paymentConditionId,
+          items: cleanData.items,
+        }
+
+        const calculatedValues =
+          await this.calculateOrderValues(calculationRequest)
+
+        cleanData.subtotalAmount = calculatedValues.subtotalAmount
+        cleanData.shippingCost = calculatedValues.shippingCost
+        cleanData.adjustments = calculatedValues.adjustments
+        cleanData.totalAmount = calculatedValues.totalAmount
+
+        if (
+          calculatedValues.totalCashback > 0 ||
+          calculatedValues.appliedSupplierStateConditionId
+        ) {
+          cleanData.totalCashback = calculatedValues.totalCashback
+          cleanData.appliedSupplierStateConditionId =
+            calculatedValues.appliedSupplierStateConditionId
+        }
+      }
+
+      const createdOrder = await this.ordersRepository.create(
+        cleanData as OrderSchema,
+      )
+
+      return createdOrder
     } catch (error) {
       console.error('Error creating order:', error)
       throw new HttpError('Erro ao criar pedido', 500, 'ORDER_CREATE_ERROR')
@@ -78,10 +117,7 @@ export class OrdersService {
     }
   }
 
-  async updateOrder(
-    id: string,
-    orderData: Partial<Omit<OrderSchema, 'id' | 'createdAt' | 'placedAt'>>,
-  ): Promise<OrderSchema> {
+  async updateOrder(id: string, orderData: OrderSchema): Promise<OrderSchema> {
     try {
       const existingOrder = await this.ordersRepository.findById(id)
 
@@ -154,7 +190,65 @@ export class OrdersService {
 
       let adjustments = 0
       let totalCashback = 0
+      let appliedSupplierStateConditionId: string | undefined
       const adjustmentDetails: AdjustmentDetailsSchema = {}
+
+      if (calculationData.storeOrgId && calculationData.supplierOrgId) {
+        try {
+          const storeState = calculationData.storeState || 'SP'
+
+          const supplierStateConditions =
+            await this.supplierStateConditionsRepository.findAll({
+              supplierOrgId: calculationData.supplierOrgId,
+              state: storeState,
+            })
+
+          if (supplierStateConditions && supplierStateConditions.length > 0) {
+            const activeCondition = supplierStateConditions[0]
+            appliedSupplierStateConditionId = activeCondition.id
+
+            if (
+              activeCondition.unitPriceAdjustment &&
+              activeCondition.unitPriceAdjustment !== 1.0
+            ) {
+              calculatedItems = calculatedItems.map((item) => {
+                const adjustedUnitPrice =
+                  item.unitPrice * activeCondition.unitPriceAdjustment!
+                const adjustedTotalPrice = adjustedUnitPrice * item.quantity
+
+                return {
+                  ...item,
+                  unitPriceAdjusted: Math.round(adjustedUnitPrice * 100) / 100,
+                  totalPrice: Math.round(adjustedTotalPrice * 100) / 100,
+                }
+              })
+
+              subtotalAmount = calculatedItems.reduce(
+                (sum, item) => sum + item.totalPrice,
+                0,
+              )
+            }
+
+            if (
+              activeCondition.cashbackPercent &&
+              activeCondition.cashbackPercent > 0
+            ) {
+              const stateCashback =
+                (subtotalAmount * activeCondition.cashbackPercent) / 100
+              totalCashback += stateCashback
+            }
+
+            adjustmentDetails.supplierStateCondition = {
+              id: activeCondition.id,
+              state: activeCondition.state,
+              unitPriceAdjustment: activeCondition.unitPriceAdjustment || 1.0,
+              cashbackPercent: activeCondition.cashbackPercent || 0,
+            }
+          }
+        } catch (error) {
+          console.warn('Error fetching supplier state conditions:', error)
+        }
+      }
 
       if (calculationData.paymentConditionId) {
         try {
@@ -184,7 +278,7 @@ export class OrdersService {
           adjustmentDetails.campaigns = []
 
           for (const campaign of campaigns.campaigns) {
-            const campaignApplies = this.checkCampaignApplies(
+            const campaignApplies = await this.checkCampaignApplies(
               campaign,
               calculationData,
               subtotalAmount,
@@ -235,10 +329,14 @@ export class OrdersService {
         adjustments: Math.round(adjustments * 100) / 100,
         totalAmount: Math.round(totalAmount * 100) / 100,
         totalCashback: Math.round(totalCashback * 100) / 100,
+        appliedSupplierStateConditionId,
         adjustmentDetails,
         calculatedItems,
       }
     } catch (error) {
+      if (error instanceof HttpError) {
+        throw error
+      }
       console.error('Error calculating order values:', error)
       throw new HttpError(
         'Erro ao calcular valores do pedido',
@@ -248,11 +346,11 @@ export class OrdersService {
     }
   }
 
-  private checkCampaignApplies(
+  private async checkCampaignApplies(
     campaign: CampaignSchema,
     calculationData: OrderCalculationRequestSchema,
     subtotalAmount: number,
-  ): boolean {
+  ): Promise<boolean> {
     if (campaign.minTotal && subtotalAmount < campaign.minTotal) {
       return false
     }
@@ -268,6 +366,16 @@ export class OrdersService {
     }
 
     if (campaign.scope === CampaignScope.CATEGORY && campaign.categoryId) {
+      const productIds = calculationData.items.map((item) => item.productId)
+
+      const hasApplicableProduct = await this.checkProductsInCategory(
+        productIds,
+        campaign.categoryId,
+      )
+
+      if (!hasApplicableProduct) {
+        return false
+      }
     }
 
     if (campaign.scope === CampaignScope.PRODUCT && campaign.productIds) {
@@ -279,6 +387,27 @@ export class OrdersService {
       }
     }
 
+    const now = new Date()
+    if (campaign.startAt && new Date(campaign.startAt) > now) {
+      return false
+    }
+    if (campaign.endAt && new Date(campaign.endAt) < now) {
+      return false
+    }
+
     return true
+  }
+
+  private async checkProductsInCategory(
+    productIds: string[],
+    categoryId: string,
+  ): Promise<boolean> {
+    for (const productId of productIds) {
+      const product = await this.productRepository.findById(productId)
+      if (product && product.categoryId === categoryId) {
+        return true
+      }
+    }
+    return false
   }
 }

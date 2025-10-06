@@ -19,7 +19,19 @@ export abstract class BaseRepository {
     callback: (client: PoolClient) => Promise<T>,
   ): Promise<T> {
     try {
-      return await database.transaction(callback)
+      return await database.transaction(async (client) => {
+        const wrappedClient = {
+          ...client,
+          query: async (text: string, params?: any[]) => {
+            const result = await client.query(text, params)
+            return {
+              ...result,
+              rows: humps.camelizeKeys(result.rows),
+            }
+          },
+        }
+        return await callback(wrappedClient as PoolClient)
+      })
     } catch (error) {
       console.error('Database transaction error:', error)
       throw new Error(`Database transaction failed: ${error}`)

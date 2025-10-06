@@ -1,6 +1,7 @@
 import { BaseRepository } from './base.repository'
 import { OrderSchema, OrderFiltersSchema } from '@/schemas'
 import { PoolClient } from '@/database'
+import { OrderStatus } from '@/enums'
 
 export class OrdersRepository extends BaseRepository {
   private async findByIdWithTransaction(
@@ -27,16 +28,13 @@ export class OrdersRepository extends BaseRepository {
     return order as OrderSchema
   }
 
-  async create(
-    order: Omit<OrderSchema, 'id' | 'createdAt' | 'placedAt'>,
-  ): Promise<OrderSchema> {
+  async create(order: OrderSchema): Promise<OrderSchema> {
     return this.executeTransaction(async (client) => {
       const orderQuery = `
         INSERT INTO orders (
           store_org_id, supplier_org_id, status, shipping_address_id,
           subtotal_amount, shipping_cost, adjustments, total_amount,
-          total_cashback, applied_supplier_state_condition_id,
-          payment_condition_id, created_by
+          payment_condition_id, created_by, total_cashback, applied_supplier_state_condition_id
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
       `
@@ -44,16 +42,16 @@ export class OrdersRepository extends BaseRepository {
       const orderParams = [
         order.storeOrgId,
         order.supplierOrgId,
-        order.status || 'PLACED',
-        order.shippingAddressId,
-        order.subtotalAmount,
-        order.shippingCost,
-        order.adjustments,
-        order.totalAmount,
-        order.totalCashback,
-        order.appliedSupplierStateConditionId,
-        order.paymentConditionId,
-        order.createdBy,
+        order.status || OrderStatus.PLACED,
+        order.shippingAddressId ?? null,
+        order.subtotalAmount ?? 0,
+        order.shippingCost ?? 0,
+        order.adjustments ?? 0,
+        order.totalAmount ?? 0,
+        order.paymentConditionId ?? null,
+        order.createdBy ?? null,
+        order.totalCashback ?? 0,
+        order.appliedSupplierStateConditionId ?? null,
       ]
 
       const orderResult = await client.query(orderQuery, orderParams)
@@ -62,14 +60,14 @@ export class OrdersRepository extends BaseRepository {
       if (order.items && order.items.length > 0) {
         const itemInserts = order.items
           .map((_, index) => {
-            const baseIndex = index * 5
-            return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5})`
+            const baseIndex = index * 6
+            return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`
           })
           .join(', ')
 
         const itemQuery = `
           INSERT INTO order_items (
-            order_id, product_id, quantity, unit_price, total_price
+            order_id, product_id, quantity, unit_price, total_price, applied_cashback_amount
           ) VALUES ${itemInserts}
         `
 
@@ -80,6 +78,7 @@ export class OrdersRepository extends BaseRepository {
             item.quantity.toString(),
             item.unitPrice.toString(),
             item.totalPrice.toString(),
+            (item.appliedCashbackAmount ?? 0).toString(),
           )
         })
 
@@ -184,10 +183,7 @@ export class OrdersRepository extends BaseRepository {
       ORDER BY o.created_at DESC
     `
 
-    const ordersResult = await this.executeQuery<OrderSchema>(
-      dataQuery,
-      params,
-    )
+    const ordersResult = await this.executeQuery<OrderSchema>(dataQuery, params)
 
     return {
       orders: ordersResult,
@@ -195,17 +191,20 @@ export class OrdersRepository extends BaseRepository {
     }
   }
 
-  async update(
-    id: string,
-    order: Partial<Omit<OrderSchema, 'id' | 'createdAt' | 'placedAt'>>,
-  ): Promise<OrderSchema | null> {
+  async update(id: string, order: OrderSchema): Promise<OrderSchema | null> {
     return this.executeTransaction(async (client) => {
       const fields: string[] = []
       const params: any[] = []
       let paramIndex = 1
 
       Object.entries(order).forEach(([key, value]) => {
-        if (value !== undefined && key !== 'items') {
+        if (
+          value !== undefined &&
+          key !== 'items' &&
+          key !== 'id' &&
+          key !== 'createdAt' &&
+          key !== 'placedAt'
+        ) {
           const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
           fields.push(`${snakeKey} = $${paramIndex}`)
           params.push(value)
@@ -230,14 +229,14 @@ export class OrdersRepository extends BaseRepository {
         if (order.items.length > 0) {
           const itemInserts = order.items
             .map((_, index) => {
-              const baseIndex = index * 5
-              return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5})`
+              const baseIndex = index * 6
+              return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`
             })
             .join(', ')
 
           const itemQuery = `
             INSERT INTO order_items (
-              order_id, product_id, quantity, unit_price, total_price
+              order_id, product_id, quantity, unit_price, total_price, applied_cashback_amount
             ) VALUES ${itemInserts}
           `
 
@@ -248,6 +247,7 @@ export class OrdersRepository extends BaseRepository {
               item.quantity.toString(),
               item.unitPrice.toString(),
               item.totalPrice.toString(),
+              (item.appliedCashbackAmount ?? 0).toString(),
             )
           })
 
@@ -269,5 +269,22 @@ export class OrdersRepository extends BaseRepository {
 
       return (result.rowCount || 0) > 0
     })
+  }
+
+  async updateCashbackAndStateCondition(
+    orderId: string,
+    totalCashback: number,
+    appliedSupplierStateConditionId?: string,
+  ): Promise<void> {
+    const updateQuery = `
+      UPDATE orders 
+      SET total_cashback = $1, applied_supplier_state_condition_id = $2
+      WHERE id = $3
+    `
+    await this.executeQuery(updateQuery, [
+      totalCashback,
+      appliedSupplierStateConditionId,
+      orderId,
+    ])
   }
 }

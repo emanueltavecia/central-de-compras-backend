@@ -152,7 +152,7 @@ export class OrdersController {
     },
   })
   async updateOrder(
-    orderData: Partial<OrderSchema>,
+    orderData: OrderSchema,
     req: AuthenticatedRequest,
     res: Response,
   ) {
