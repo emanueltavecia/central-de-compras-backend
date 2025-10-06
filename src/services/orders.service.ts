@@ -3,6 +3,7 @@ import {
   PaymentConditionsRepository,
   CampaignsRepository,
   SupplierStateConditionsRepository,
+  ProductRepository,
 } from '@/repository'
 import {
   OrderSchema,
@@ -20,6 +21,7 @@ export class OrdersService {
   private paymentConditionsRepository: PaymentConditionsRepository
   private campaignsRepository: CampaignsRepository
   private supplierStateConditionsRepository: SupplierStateConditionsRepository
+  private productRepository: ProductRepository
 
   constructor() {
     this.ordersRepository = new OrdersRepository()
@@ -27,6 +29,7 @@ export class OrdersService {
     this.campaignsRepository = new CampaignsRepository()
     this.supplierStateConditionsRepository =
       new SupplierStateConditionsRepository()
+    this.productRepository = new ProductRepository()
   }
 
   private removeReadOnlyFields(data: OrderSchema): OrderSchema {
@@ -275,7 +278,7 @@ export class OrdersService {
           adjustmentDetails.campaigns = []
 
           for (const campaign of campaigns.campaigns) {
-            const campaignApplies = this.checkCampaignApplies(
+            const campaignApplies = await this.checkCampaignApplies(
               campaign,
               calculationData,
               subtotalAmount,
@@ -343,11 +346,11 @@ export class OrdersService {
     }
   }
 
-  private checkCampaignApplies(
+  private async checkCampaignApplies(
     campaign: CampaignSchema,
     calculationData: OrderCalculationRequestSchema,
     subtotalAmount: number,
-  ): boolean {
+  ): Promise<boolean> {
     if (campaign.minTotal && subtotalAmount < campaign.minTotal) {
       return false
     }
@@ -363,9 +366,16 @@ export class OrdersService {
     }
 
     if (campaign.scope === CampaignScope.CATEGORY && campaign.categoryId) {
-      // TODO: Add category check when product-category relationship is available
-      // For now, we'll assume category scope campaigns apply to all products
-      console.warn('Category scope campaign check not implemented yet')
+      const productIds = calculationData.items.map((item) => item.productId)
+
+      const hasApplicableProduct = await this.checkProductsInCategory(
+        productIds,
+        campaign.categoryId,
+      )
+
+      if (!hasApplicableProduct) {
+        return false
+      }
     }
 
     if (campaign.scope === CampaignScope.PRODUCT && campaign.productIds) {
@@ -386,5 +396,18 @@ export class OrdersService {
     }
 
     return true
+  }
+
+  private async checkProductsInCategory(
+    productIds: string[],
+    categoryId: string,
+  ): Promise<boolean> {
+    for (const productId of productIds) {
+      const product = await this.productRepository.findById(productId)
+      if (product && product.categoryId === categoryId) {
+        return true
+      }
+    }
+    return false
   }
 }

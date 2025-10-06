@@ -5,7 +5,7 @@ import { config } from '@/config'
 const NUMERIC_TYPE_OID = 1700
 
 types.setTypeParser(NUMERIC_TYPE_OID, (val: string) =>
-  val === null ? null : new Decimal(val).toNumber(),
+  val == null ? null : new Decimal(val).toNumber(),
 )
 
 class Database {
