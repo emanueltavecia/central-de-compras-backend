@@ -1,4 +1,5 @@
 export * from './base.repository'
+export * from './address.repository'
 export * from './auth.repository'
 export * from './campaigns.repository'
 export * from './product.repository'

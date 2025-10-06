@@ -1,12 +1,15 @@
 import { OrganizationsRepository } from '@/repository'
-import { OrganizationSchema } from '@/schemas'
+import { OrganizationFiltersSchema, OrganizationSchema } from '@/schemas'
 import { HttpError } from '@/utils'
+import { AddressService } from './address.service'
 
 export class OrganizationsService {
   private organizationRepository: OrganizationsRepository
+  private addressService: AddressService
 
   constructor() {
     this.organizationRepository = new OrganizationsRepository()
+    this.addressService = new AddressService()
   }
 
   private removeReadOnlyFields(
@@ -16,15 +19,15 @@ export class OrganizationsService {
       id: _id,
       createdAt: _createdAt,
       createdBy: _createdBy,
+      address: _address,
       ...cleanData
     } = data
     return cleanData
   }
 
-  async getOrganizations(filters?: {
-    type?: string
-    active?: boolean
-  }): Promise<OrganizationSchema[]> {
+  async getOrganizations(
+    filters?: OrganizationFiltersSchema,
+  ): Promise<OrganizationSchema[]> {
     try {
       return await this.organizationRepository.findAll(filters)
     } catch (error) {
@@ -37,9 +40,15 @@ export class OrganizationsService {
     }
   }
 
-  async getOrganizationById(id: string): Promise<OrganizationSchema> {
+  async getOrganizationById(
+    id: string,
+    includeAddresses: boolean = true,
+  ): Promise<OrganizationSchema> {
     try {
-      const organization = await this.organizationRepository.findById(id)
+      const organization = await this.organizationRepository.findById(
+        id,
+        includeAddresses,
+      )
 
       if (!organization) {
         throw new HttpError(
@@ -101,10 +110,21 @@ export class OrganizationsService {
         }
       }
 
-      return await this.organizationRepository.create(
+      const newOrganization = await this.organizationRepository.create(
         cleanData as Omit<OrganizationSchema, 'id' | 'createdAt' | 'createdBy'>,
         createdBy,
       )
+
+      if (organizationData.address && organizationData.address.length > 0) {
+        const createdAddresses =
+          await this.addressService.createAddressesForOrganization(
+            newOrganization.id,
+            organizationData.address,
+          )
+        newOrganization.address = createdAddresses
+      }
+
+      return newOrganization
     } catch (error) {
       if (error instanceof HttpError) {
         throw error
@@ -179,6 +199,25 @@ export class OrganizationsService {
         )
       }
 
+      if (organizationData.address !== undefined) {
+        if (organizationData.address && organizationData.address.length > 0) {
+          await this.addressService.deleteAddressesByOrganization(id)
+          const createdAddresses =
+            await this.addressService.createAddressesForOrganization(
+              id,
+              organizationData.address,
+            )
+          updatedOrganization.address = createdAddresses
+        } else {
+          await this.addressService.deleteAddressesByOrganization(id)
+          updatedOrganization.address = []
+        }
+      } else {
+        const addresses =
+          await this.addressService.getAddressesByOrganization(id)
+        updatedOrganization.address = addresses
+      }
+
       return updatedOrganization
     } catch (error) {
       if (error instanceof HttpError) {
@@ -214,6 +253,7 @@ export class OrganizationsService {
         await this.organizationRepository.updateStatus(id, false)
         return { deleted: false, inactivated: true }
       } else {
+        await this.addressService.deleteAddressesByOrganization(id)
         await this.organizationRepository.deletePermanent(id)
         return { deleted: true, inactivated: false }
       }

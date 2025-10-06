@@ -1,5 +1,10 @@
 import { BaseRepository } from './base.repository'
-import { OrganizationSchema, UserSchema } from '@/schemas'
+import {
+  OrganizationSchema,
+  UserSchema,
+  AddressSchema,
+  OrganizationFiltersSchema,
+} from '@/schemas'
 import { PoolClient } from '@/database'
 
 export class OrganizationsRepository extends BaseRepository {
@@ -7,10 +12,10 @@ export class OrganizationsRepository extends BaseRepository {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
   }
 
-  async findAll(filters?: {
-    type?: string
-    active?: boolean
-  }): Promise<OrganizationSchema[]> {
+  async findAll(
+    filters?: OrganizationFiltersSchema,
+    includeAddresses: boolean = true,
+  ): Promise<OrganizationSchema[]> {
     const conditions: string[] = []
     const params: any[] = []
     let paramIndex = 1
@@ -31,13 +36,61 @@ export class OrganizationsRepository extends BaseRepository {
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
     const query = `SELECT * FROM organizations ${whereClause} ORDER BY created_at DESC`
 
-    return this.executeQuery<OrganizationSchema>(query, params)
+    const organizations = await this.executeQuery<OrganizationSchema>(
+      query,
+      params,
+    )
+
+    if (includeAddresses && organizations.length > 0) {
+      const orgIds = organizations.map((org) => org.id)
+      const placeholders = orgIds.map((_, index) => `$${index + 1}`).join(',')
+      const addressQuery = `
+        SELECT * FROM addresses 
+        WHERE organization_id IN (${placeholders}) 
+        ORDER BY organization_id, is_primary DESC, created_at ASC
+      `
+      const addresses = await this.executeQuery<AddressSchema>(
+        addressQuery,
+        orgIds,
+      )
+
+      const addressMap = new Map<string, AddressSchema[]>()
+      addresses.forEach((address) => {
+        if (!addressMap.has(address.organizationId)) {
+          addressMap.set(address.organizationId, [])
+        }
+        addressMap.get(address.organizationId)!.push(address)
+      })
+
+      organizations.forEach((org) => {
+        org.address = addressMap.get(org.id) || []
+      })
+    }
+
+    return organizations
   }
 
-  async findById(id: string): Promise<OrganizationSchema | null> {
+  async findById(
+    id: string,
+    includeAddresses: boolean = false,
+  ): Promise<OrganizationSchema | null> {
     const query = 'SELECT * FROM organizations WHERE id = $1'
     const result = await this.executeQuery<OrganizationSchema>(query, [id])
-    return result[0] || null
+
+    if (result.length === 0) return null
+
+    const organization = result[0]
+
+    if (includeAddresses) {
+      const addressQuery =
+        'SELECT * FROM addresses WHERE organization_id = $1 ORDER BY is_primary DESC, created_at ASC'
+      const addresses = await this.executeQuery<AddressSchema>(addressQuery, [
+        id,
+      ])
+      organization.address = addresses
+    }
+
+    return organization
   }
 
   async create(
