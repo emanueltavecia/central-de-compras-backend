@@ -1,10 +1,12 @@
 import {
   IsEmail,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
   Validate,
+  ValidateNested,
 } from 'class-validator'
 import { ApiProperty } from '@/decorators'
 import { OrgType } from '@/enums'
@@ -13,6 +15,8 @@ import {
   IsPhoneValidator,
   VALIDATION_MESSAGES,
 } from '@/utils'
+import { AddressSchema } from './address.schema'
+import { Type } from 'class-transformer'
 
 export class OrganizationSchema {
   @ApiProperty({
@@ -38,11 +42,11 @@ export class OrganizationSchema {
     description: 'Razão social',
     example: 'Empresa Exemplo LTDA',
     type: 'string',
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  legalName?: string
+  legalName: string
 
   @ApiProperty({
     description: 'Nome fantasia',
@@ -97,6 +101,17 @@ export class OrganizationSchema {
   @IsOptional()
   @IsUrl({}, { message: VALIDATION_MESSAGES.INVALID_URL })
   website?: string
+
+  @ApiProperty({
+    description: 'Endereços da organização',
+    type: 'array',
+    schema: AddressSchema,
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => AddressSchema)
+  address?: AddressSchema[]
 
   @ApiProperty({
     description: 'ID do usuário que criou a organização',

@@ -8,16 +8,18 @@ CREATE TYPE campaign_type AS ENUM ('cashback','gift');
 CREATE TYPE campaign_scope AS ENUM ('all','category','product');
 CREATE TYPE user_account_status AS ENUM ('active','inactive','suspended');
 CREATE TYPE permission_name AS ENUM (
-  'manage_users',        -- admin
-  'manage_stores',       -- admin
-  'manage_suppliers',    -- admin
-  'view_suppliers',      -- admin/loja
-  'manage_products',     -- admin/fornecedor
-  'view_orders',         -- admin/loja/fornecedor
-  'create_orders',       -- admin/loja
-  'manage_orders',       -- admin/fornecedor
-  'manage_campaigns',    -- admin/fornecedor
-  'manage_conditions'    -- admin/fornecedor
+  'manage_users',               -- admin
+  'manage_stores',              -- admin
+  'manage_suppliers',           -- admin
+  'view_suppliers',             -- admin/loja
+  'manage_products',            -- admin/fornecedor
+  'view_orders',                -- admin/loja/fornecedor
+  'create_orders',              -- admin/loja
+  'manage_orders',              -- admin/fornecedor
+  'manage_campaigns',           -- admin/fornecedor
+  'manage_conditions',          -- admin/fornecedor
+  'manage_supplier_conditions', -- admin/fornecedor
+  'manage_organizations'        -- admin
 );
 CREATE TYPE order_payment_method AS ENUM ('credit_card', 'boleto', 'pix');
 
@@ -48,7 +50,7 @@ CREATE TABLE users (
   full_name TEXT,
   phone TEXT,
   role_id UUID NOT NULL REFERENCES roles(id),
-  organization_id UUID NOT NULL REFERENCES organization(id), -- FK adicionada depois
+  organization_id UUID NOT NULL, -- FK adicionada depois
   status user_account_status DEFAULT 'active',
   created_by UUID, -- FK adicionada depois
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()

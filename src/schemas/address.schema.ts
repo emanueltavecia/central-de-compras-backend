@@ -26,20 +26,19 @@ export class AddressSchema {
     type: 'string',
     format: 'uuid',
     required: true,
+    readOnly: true,
   })
-  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
-  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   organizationId: string
 
   @ApiProperty({
     description: 'Nome da rua',
     example: 'Rua das Flores',
     type: 'string',
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  street?: string
+  street: string
 
   @ApiProperty({
     description: 'Número do endereço',
@@ -65,44 +64,44 @@ export class AddressSchema {
     description: 'Bairro',
     example: 'Centro',
     type: 'string',
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  neighborhood?: string
+  neighborhood: string
 
   @ApiProperty({
     description: 'Cidade',
     example: 'Florianópolis',
     type: 'string',
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  city?: string
+  city: string
 
   @ApiProperty({
     description: 'Estado (UF)',
     example: 'SC',
     type: 'string',
-    required: false,
+    required: true,
     maxLength: 2,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   @Length(2, 2, { message: VALIDATION_MESSAGES.INVALID_STATE })
-  state?: string
+  state: string
 
   @ApiProperty({
     description: 'CEP',
     example: '88000000',
     type: 'string',
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   @Validate(IsPostalCodeValidator)
-  postalCode?: string
+  postalCode: string
 
   @ApiProperty({
     description: 'Se é o endereço principal',

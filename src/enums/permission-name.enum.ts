@@ -9,4 +9,6 @@ export enum PermissionName {
   MANAGE_ORDERS = 'manage_orders',
   MANAGE_CAMPAIGNS = 'manage_campaigns',
   MANAGE_CONDITIONS = 'manage_conditions',
+  MANAGE_SUPPLIER_CONDITIONS = 'manage_supplier_conditions',
+  MANAGE_ORGANIZATIONS = 'manage_organizations',
 }
