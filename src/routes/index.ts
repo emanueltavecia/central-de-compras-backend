@@ -22,6 +22,7 @@ import {
   supplierStateConditionsSwaggerPaths,
 } from './supplier-state-conditions.routes'
 import { ordersRoutes, ordersSwaggerPaths } from './orders.routes'
+import { categoriesRoutes, categoriesSwaggerPaths } from './categories.routes'
 
 export function registerRoutes(app: Express) {
   app.use(healthRoutes)
@@ -35,6 +36,7 @@ export function registerRoutes(app: Express) {
   app.use(organizationAddressesRoutes)
   app.use(supplierStateConditionsRoutes)
   app.use(ordersRoutes)
+  app.use(categoriesRoutes)
 }
 
 export const swaggerPaths = {
@@ -49,4 +51,5 @@ export const swaggerPaths = {
   organizationAddresses: organizationAddressesSwaggerPaths,
   supplierStateConditions: supplierStateConditionsSwaggerPaths,
   orders: ordersSwaggerPaths,
+  categories: categoriesSwaggerPaths,
 }

@@ -52,3 +52,16 @@ export class CategorySchema {
   })
   createdAt: string
 }
+
+export class CategoryFiltersSchema {
+  @ApiProperty({
+    description:
+      'ID da categoria pai para filtrar subcategorias. Use "null" para categorias raiz',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  parentId?: string
+}

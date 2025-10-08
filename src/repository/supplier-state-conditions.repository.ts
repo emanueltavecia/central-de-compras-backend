@@ -15,6 +15,7 @@ export class SupplierStateConditionsRepository extends BaseRepository {
   private toSnakeCase(str: string): string {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
   }
+
   async findAll(
     filters: FindAllFilters,
   ): Promise<SupplierStateConditionSchema[]> {

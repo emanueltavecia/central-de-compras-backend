@@ -188,7 +188,7 @@ export class OrdersService {
         }
       })
 
-      let adjustments = 0
+      const adjustments = 0
       let totalCashback = 0
       let appliedSupplierStateConditionId: string | undefined
       const adjustmentDetails: AdjustmentDetailsSchema = {}

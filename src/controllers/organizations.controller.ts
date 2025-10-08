@@ -44,7 +44,7 @@ export class OrganizationsController {
 
       if (currentUser.role?.name === UserRole.ADMIN) {
         filters = {
-          type: type,
+          type,
           active,
         }
       } else if (currentUser.role?.name === UserRole.STORE) {
