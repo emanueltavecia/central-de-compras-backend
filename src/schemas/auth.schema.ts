@@ -6,7 +6,7 @@ import { UserSchema } from './user.schema'
 export class LoginSchema {
   @ApiProperty({
     description: 'Email do usuário',
-    example: 'usuario@exemplo.com',
+    example: 'admin@centralcompras.com',
     type: 'string',
     format: 'email',
     required: true,
@@ -17,7 +17,7 @@ export class LoginSchema {
 
   @ApiProperty({
     description: 'Senha do usuário',
-    example: 'senha123',
+    example: 'Admin@123',
     type: 'string',
     required: true,
   })

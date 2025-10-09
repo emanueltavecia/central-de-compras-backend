@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -85,8 +86,6 @@ export class UserSchema {
     required: true,
     readOnly: true,
   })
-  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
-  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   roleId: string
 
   @ApiProperty({
@@ -137,4 +136,19 @@ export class UserSchema {
     readOnly: true,
   })
   createdAt: string
+}
+
+export class UpdateUserStatusSchema {
+  @ApiProperty({
+    description: 'Novo status da conta do usuário',
+    example: UserAccountStatus.INACTIVE,
+    type: 'string',
+    enum: UserAccountStatus,
+    required: true,
+  })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  @IsEnum(UserAccountStatus, {
+    message: VALIDATION_MESSAGES.INVALID_ENUM(UserAccountStatus),
+  })
+  status: UserAccountStatus
 }

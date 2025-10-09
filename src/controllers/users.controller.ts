@@ -8,6 +8,8 @@ import {
   ErrorResponseSchema,
   SuccessResponseSchema,
   PermissionSchema,
+  UpdateUserStatusSchema,
+  IdParamSchema,
 } from '@/schemas'
 import { UsersService } from '@/services'
 
@@ -56,6 +58,7 @@ export class UsersController {
     path: '/:id',
     summary: 'Obter usuário específico',
     permissions: [PermissionName.MANAGE_USERS],
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: UserSchema,
@@ -109,10 +112,13 @@ export class UsersController {
       500: ErrorResponseSchema,
     },
   })
-  async createUser(req: AuthenticatedRequest, res: Response) {
+  async createUser(
+    userData: UserSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
       const currentUser = req.user!
-      const userData = req.body as UserSchema
       const newUser = await usersService.createUser(userData, currentUser.id)
 
       return res
@@ -131,6 +137,7 @@ export class UsersController {
     summary: 'Atualizar dados do usuário',
     permissions: [PermissionName.MANAGE_USERS],
     body: UserSchema,
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: UserSchema,
@@ -144,11 +151,14 @@ export class UsersController {
       500: ErrorResponseSchema,
     },
   })
-  async updateUser(req: AuthenticatedRequest, res: Response) {
+  async updateUser(
+    userData: UserSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
       const { id } = req.params
       const currentUser = req.user!
-      const userData = req.body as UserSchema
 
       const updatedUser = await usersService.updateUser(
         id,
@@ -179,7 +189,8 @@ export class UsersController {
     path: '/:id/status',
     summary: 'Alterar status ativo/inativo do usuário',
     permissions: [PermissionName.MANAGE_USERS],
-    body: UserSchema,
+    body: UpdateUserStatusSchema,
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: UserSchema,
@@ -193,16 +204,19 @@ export class UsersController {
       500: ErrorResponseSchema,
     },
   })
-  async updateUserStatus(req: AuthenticatedRequest, res: Response) {
+  async updateUserStatus(
+    { status }: UpdateUserStatusSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
     try {
       const { id } = req.params
-      const { status } = req.body
       const currentUser = req.user!
 
       const updatedUser = await usersService.updateStatus(
         id,
         status,
-        currentUser.id,
+        currentUser.organizationId,
       )
 
       if (!updatedUser) {
@@ -231,6 +245,7 @@ export class UsersController {
     path: '/:id',
     summary: 'Deletar usuário',
     permissions: [PermissionName.MANAGE_USERS],
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: UserSchema,
@@ -277,6 +292,7 @@ export class UsersController {
     path: '/:id/permissions',
     summary: 'Obter permissões do usuário',
     permissions: [PermissionName.MANAGE_USERS],
+    params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: PermissionSchema,

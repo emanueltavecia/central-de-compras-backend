@@ -112,7 +112,11 @@ export class UsersService {
     return this.repo.update(id, organizationId, dataToUpdate)
   }
 
-  async updateStatus(id: string, status: string, currentUserId: string) {
+  async updateStatus(
+    id: string,
+    status: UserAccountStatus,
+    currentUserId: string,
+  ) {
     if (id === currentUserId) {
       throw new HttpError(
         'Não é possível alterar seu próprio status',
@@ -133,7 +137,7 @@ export class UsersService {
       )
     }
 
-    return this.repo.updateStatus(id, status, currentUserId)
+    return this.repo.updateStatus(id, currentUserId, status)
   }
 
   async deleteUser(id: string, currentUserId: string) {

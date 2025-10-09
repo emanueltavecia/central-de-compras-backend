@@ -22,7 +22,7 @@ export class CampaignsRepository extends BaseRepository {
     `
     const productsResult = await client.query(productsQuery, [id])
 
-    campaign.product_ids = productsResult.rows.map((row) => row.product_id)
+    campaign.productIds = productsResult.rows.map((row) => row.productId)
 
     return campaign as CampaignSchema
   }

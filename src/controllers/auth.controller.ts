@@ -52,46 +52,6 @@ export class AuthController {
   }
 
   @ApiRoute({
-    method: 'post',
-    path: '/register',
-    summary: 'Cadastro de novo usuário',
-    permissions: [PermissionName.MANAGE_USERS],
-    body: UserSchema,
-    responses: {
-      201: SuccessResponseSchema.create({
-        schema: UserSchema,
-        dataDescription: 'Dados do usuário criado',
-        message: 'Usuário criado com sucesso',
-      }),
-      400: ErrorResponseSchema,
-      401: ErrorResponseSchema,
-      403: ErrorResponseSchema,
-      409: ErrorResponseSchema,
-      500: ErrorResponseSchema,
-    },
-  })
-  async register(
-    userData: UserSchema,
-    req: AuthenticatedRequest,
-    res: Response,
-  ) {
-    try {
-      const currentUser = req.user!
-      const createdByUserId = currentUser.id
-
-      const newUser = await this.authService.register(userData, createdByUserId)
-
-      return res
-        .status(201)
-        .json(createSuccessResponse('Usuário criado com sucesso', newUser))
-    } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
-    }
-  }
-
-  @ApiRoute({
     method: 'get',
     path: '/profile',
     summary: 'Obter perfil do usuário autenticado',
