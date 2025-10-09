@@ -51,17 +51,38 @@ export class OrdersService {
       const cleanData = this.removeReadOnlyFields(orderData as OrderSchema)
 
       if (cleanData.items && cleanData.items.length > 0) {
+        // Buscar nomes dos produtos para preencher productNameSnapshot
+        const itemsWithProductNames = await Promise.all(
+          cleanData.items.map(async (item) => {
+            const product = await this.productRepository.findById(
+              item.productId,
+            )
+            if (!product) {
+              throw new HttpError(
+                `Produto com ID ${item.productId} não encontrado`,
+                404,
+                'PRODUCT_NOT_FOUND',
+              )
+            }
+            return {
+              ...item,
+              productNameSnapshot: product.name,
+            }
+          }),
+        )
+
         const calculationRequest: OrderCalculationRequestSchema = {
           storeOrgId: cleanData.storeOrgId!,
           supplierOrgId: cleanData.supplierOrgId!,
           shippingAddressId: cleanData.shippingAddressId,
           paymentConditionId: cleanData.paymentConditionId,
-          items: cleanData.items,
+          items: itemsWithProductNames,
         }
 
         const calculatedValues =
           await this.calculateOrderValues(calculationRequest)
 
+        cleanData.items = itemsWithProductNames
         cleanData.subtotalAmount = calculatedValues.subtotalAmount
         cleanData.shippingCost = calculatedValues.shippingCost
         cleanData.adjustments = calculatedValues.adjustments
@@ -126,6 +147,32 @@ export class OrdersService {
       }
 
       const cleanData = this.removeReadOnlyFields(orderData as OrderSchema)
+
+      // Se os itens estão sendo atualizados, buscar nomes dos produtos
+      if (cleanData.items && cleanData.items.length > 0) {
+        cleanData.items = await Promise.all(
+          cleanData.items.map(async (item) => {
+            // Se já tem productNameSnapshot, mantém. Senão busca do produto
+            if (!item.productNameSnapshot) {
+              const product = await this.productRepository.findById(
+                item.productId,
+              )
+              if (!product) {
+                throw new HttpError(
+                  `Produto com ID ${item.productId} não encontrado`,
+                  404,
+                  'PRODUCT_NOT_FOUND',
+                )
+              }
+              return {
+                ...item,
+                productNameSnapshot: product.name,
+              }
+            }
+            return item
+          }),
+        )
+      }
 
       const updatedOrder = await this.ordersRepository.update(id, cleanData)
 

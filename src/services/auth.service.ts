@@ -66,13 +66,6 @@ export class AuthService {
       throw new HttpError('Email já está em uso', 409, 'CONFLICT')
     }
 
-    const roleExists = await this.userRepository.checkRoleExists(
-      userData.roleId,
-    )
-    if (!roleExists) {
-      throw new HttpError('Role especificada não existe', 400, 'BAD_REQUEST')
-    }
-
     if (userData.organizationId) {
       const organizationExists =
         await this.userRepository.checkOrganizationExists(

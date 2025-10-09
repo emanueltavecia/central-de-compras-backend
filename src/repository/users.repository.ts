@@ -1,7 +1,7 @@
 import { HttpError } from '@/utils'
 import { BaseRepository } from './base.repository'
 import { UserSchema } from '@/schemas'
-import { UserRole } from '@/enums'
+import { UserAccountStatus, UserRole } from '@/enums'
 
 export class UsersRepository extends BaseRepository {
   async getRoleIdByName(roleName: string): Promise<string> {
@@ -76,26 +76,7 @@ export class UsersRepository extends BaseRepository {
       ORDER BY u.created_at DESC
     `
 
-    const result = await this.executeQuery<any>(query, params)
-
-    return result.map((row) => ({
-      id: row.id,
-      email: row.email,
-      fullName: row.full_name,
-      phone: row.phone,
-      roleId: row.role_id,
-      organizationId: row.organization_id,
-      status: row.status,
-      createdBy: row.created_by,
-      createdAt: row.created_at,
-      role: {
-        id: row.role_id,
-        name: row.role_name,
-        description: row.role_description,
-        createdAt: row.role_created_at,
-        permissions: row.role_permissions || [],
-      },
-    }))
+    return this.executeQuery<UserSchema>(query, params)
   }
 
   async findById(id: string): Promise<UserSchema | null> {
@@ -135,25 +116,7 @@ export class UsersRepository extends BaseRepository {
     const result = await this.executeQuery<any>(query, [id])
     if (result.length === 0) return null
 
-    const row = result[0]
-    return {
-      id: row.id,
-      email: row.email,
-      fullName: row.full_name,
-      phone: row.phone,
-      roleId: row.role_id,
-      organizationId: row.organization_id,
-      status: row.status,
-      createdBy: row.created_by,
-      createdAt: row.created_at,
-      role: {
-        id: row.role_id,
-        name: row.role_name,
-        description: row.role_description,
-        createdAt: row.role_created_at,
-        permissions: row.role_permissions || [],
-      },
-    }
+    return result[0]
   }
 
   async create(
@@ -163,10 +126,10 @@ export class UsersRepository extends BaseRepository {
     const query = `
       INSERT INTO users (email, password, full_name, phone, role_id, organization_id, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id
+      RETURNING *
     `
 
-    const result = await this.executeQuery<any>(query, [
+    const result = await this.executeQuery<UserSchema>(query, [
       userData.email,
       userData.password,
       userData.fullName || null,
@@ -176,7 +139,7 @@ export class UsersRepository extends BaseRepository {
       createdBy,
     ])
 
-    return this.findById(result[0].id) as Promise<UserSchema>
+    return result[0]
   }
 
   async update(
@@ -213,35 +176,35 @@ export class UsersRepository extends BaseRepository {
       UPDATE users
       SET ${fields.join(', ')}, updated_at = now()
       WHERE id = $${paramIndex++} AND organization_id = $${paramIndex++}
-      RETURNING id
+      RETURNING *
     `
 
-    const result = await this.executeQuery<any>(query, params)
+    const result = await this.executeQuery<UserSchema>(query, params)
     if (result.length === 0) return null
 
-    return this.findById(result[0].id)
+    return result[0]
   }
 
   async updateStatus(
     id: string,
     organizationId: string,
-    status: string,
+    status: UserAccountStatus,
   ): Promise<UserSchema | null> {
     const query = `
       UPDATE users
       SET status = $1
       WHERE id = $2 AND organization_id = $3
-      RETURNING id
+      RETURNING *
     `
 
-    const result = await this.executeQuery<any>(query, [
+    const result = await this.executeQuery<UserSchema>(query, [
       status,
       id,
       organizationId,
     ])
     if (result.length === 0) return null
 
-    return this.findById(result[0].id)
+    return result[0]
   }
 
   async hasRelatedRecords(userId: string): Promise<boolean> {

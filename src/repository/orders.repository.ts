@@ -23,7 +23,16 @@ export class OrdersRepository extends BaseRepository {
     `
     const itemsResult = await client.query(itemsQuery, [id])
 
-    order.items = itemsResult.rows
+    order.items = itemsResult.rows.map((row) => ({
+      id: row.id,
+      productId: row.product_id,
+      productNameSnapshot: row.product_name_snapshot,
+      quantity: row.quantity,
+      unitPrice: row.unit_price,
+      unitPriceAdjusted: row.unit_price_adjusted,
+      totalPrice: row.total_price,
+      appliedCashbackAmount: row.applied_cashback_amount,
+    }))
 
     return order as OrderSchema
   }
@@ -60,14 +69,14 @@ export class OrdersRepository extends BaseRepository {
       if (order.items && order.items.length > 0) {
         const itemInserts = order.items
           .map((_, index) => {
-            const baseIndex = index * 6
-            return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`
+            const baseIndex = index * 8
+            return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8})`
           })
           .join(', ')
 
         const itemQuery = `
           INSERT INTO order_items (
-            order_id, product_id, quantity, unit_price, total_price, applied_cashback_amount
+            order_id, product_id, product_name_snapshot, unit_price, unit_price_adjusted, quantity, total_price, applied_cashback_amount
           ) VALUES ${itemInserts}
         `
 
@@ -75,8 +84,10 @@ export class OrdersRepository extends BaseRepository {
         order.items.forEach((item) => {
           itemParams.push(
             item.productId,
-            item.quantity.toString(),
+            item.productNameSnapshot,
             item.unitPrice.toString(),
+            item.unitPriceAdjusted.toString(),
+            item.quantity.toString(),
             item.totalPrice.toString(),
             (item.appliedCashbackAmount ?? 0).toString(),
           )
@@ -97,8 +108,10 @@ export class OrdersRepository extends BaseRepository {
                  json_build_object(
                    'id', oi.id,
                    'productId', oi.product_id,
+                   'productNameSnapshot', oi.product_name_snapshot,
                    'quantity', oi.quantity,
                    'unitPrice', oi.unit_price,
+                   'unitPriceAdjusted', oi.unit_price_adjusted,
                    'totalPrice', oi.total_price,
                    'appliedCashbackAmount', oi.applied_cashback_amount
                  )
@@ -168,8 +181,10 @@ export class OrdersRepository extends BaseRepository {
                  json_build_object(
                    'id', oi.id,
                    'productId', oi.product_id,
+                   'productNameSnapshot', oi.product_name_snapshot,
                    'quantity', oi.quantity,
                    'unitPrice', oi.unit_price,
+                   'unitPriceAdjusted', oi.unit_price_adjusted,
                    'totalPrice', oi.total_price,
                    'appliedCashbackAmount', oi.applied_cashback_amount
                  )
@@ -229,14 +244,14 @@ export class OrdersRepository extends BaseRepository {
         if (order.items.length > 0) {
           const itemInserts = order.items
             .map((_, index) => {
-              const baseIndex = index * 6
-              return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6})`
+              const baseIndex = index * 8
+              return `($1, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8})`
             })
             .join(', ')
 
           const itemQuery = `
             INSERT INTO order_items (
-              order_id, product_id, quantity, unit_price, total_price, applied_cashback_amount
+              order_id, product_id, product_name_snapshot, unit_price, unit_price_adjusted, quantity, total_price, applied_cashback_amount
             ) VALUES ${itemInserts}
           `
 
@@ -244,8 +259,10 @@ export class OrdersRepository extends BaseRepository {
           order.items.forEach((item) => {
             itemParams.push(
               item.productId,
-              item.quantity.toString(),
+              item.productNameSnapshot,
               item.unitPrice.toString(),
+              item.unitPriceAdjusted.toString(),
+              item.quantity.toString(),
               item.totalPrice.toString(),
               (item.appliedCashbackAmount ?? 0).toString(),
             )
