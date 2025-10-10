@@ -46,10 +46,10 @@ export class OrdersController {
     res: Response,
   ) {
     try {
-      const createdOrder = await this.ordersService.createOrder({
-        ...orderData,
-        createdBy: req.user?.id,
-      })
+      const createdOrder = await this.ordersService.createOrder(
+        orderData,
+        req.user?.id,
+      )
 
       return res
         .status(201)
@@ -124,78 +124,6 @@ export class OrdersController {
       return res
         .status(200)
         .json(createSuccessResponse('Pedido encontrado', order))
-    } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
-    }
-  }
-
-  @ApiRoute({
-    method: 'put',
-    path: '/:id',
-    summary: 'Atualizar um pedido',
-    params: IdParamSchema,
-    body: OrderSchema,
-    permissions: [PermissionName.MANAGE_ORDERS],
-    responses: {
-      200: SuccessResponseSchema.create({
-        schema: OrderSchema,
-        dataDescription: 'Dados do pedido atualizado',
-        message: 'Pedido atualizado com sucesso',
-      }),
-      400: ErrorResponseSchema,
-      401: ErrorResponseSchema,
-      403: ErrorResponseSchema,
-      404: ErrorResponseSchema,
-      500: ErrorResponseSchema,
-    },
-  })
-  async updateOrder(
-    orderData: OrderSchema,
-    req: AuthenticatedRequest,
-    res: Response,
-  ) {
-    try {
-      const { id } = req.params
-      const order = await this.ordersService.updateOrder(id, orderData)
-
-      return res
-        .status(200)
-        .json(createSuccessResponse('Pedido atualizado com sucesso', order))
-    } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
-    }
-  }
-
-  @ApiRoute({
-    method: 'delete',
-    path: '/:id',
-    summary: 'Excluir um pedido',
-    params: IdParamSchema,
-    permissions: [PermissionName.MANAGE_ORDERS],
-    responses: {
-      200: SuccessResponseSchema.create({
-        dataDescription: 'Confirmação de exclusão',
-        message: 'Pedido excluído com sucesso',
-      }),
-      400: ErrorResponseSchema,
-      401: ErrorResponseSchema,
-      403: ErrorResponseSchema,
-      404: ErrorResponseSchema,
-      500: ErrorResponseSchema,
-    },
-  })
-  async deleteOrder(req: AuthenticatedRequest, res: Response) {
-    try {
-      const { id } = req.params
-      await this.ordersService.deleteOrder(id)
-
-      return res
-        .status(200)
-        .json(createSuccessResponse('Pedido excluído com sucesso', null))
     } catch (error: any) {
       return res
         .status(error.statusCode || 500)

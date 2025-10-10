@@ -1,7 +1,6 @@
 import { Request, Response } from 'express'
 import { ApiController, ApiRoute } from '@/decorators'
 import { AuthService } from '@/services'
-import { PermissionName } from '@/enums'
 import { AuthenticatedRequest } from '@/middlewares'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
 import {

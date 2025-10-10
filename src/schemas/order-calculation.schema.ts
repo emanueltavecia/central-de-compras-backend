@@ -6,11 +6,95 @@ import {
   ArrayMinSize,
   IsNumber,
   IsString,
+  IsInt,
+  Min,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ApiProperty } from '@/decorators'
-import { OrderItemSchema } from './order-item.schema'
 import { VALIDATION_MESSAGES } from '@/utils'
+
+export class OrderCalculationItemSchema {
+  @ApiProperty({
+    description: 'ID do produto',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+    required: true,
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  productId: string
+
+  @ApiProperty({
+    description: 'Nome do produto no momento do pedido',
+    example: 'Smartphone XYZ',
+    type: 'string',
+    required: true,
+  })
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
+  productNameSnapshot: string
+
+  @ApiProperty({
+    description: 'Quantidade do produto',
+    example: 2,
+    type: 'integer',
+    required: true,
+    minimum: 1,
+  })
+  @IsInt({ message: VALIDATION_MESSAGES.INVALID_INTEGER })
+  @Min(1, { message: VALIDATION_MESSAGES.MIN_QUANTITY(1) })
+  quantity: number
+
+  @ApiProperty({
+    description: 'Preço unitário original',
+    example: 999.99,
+    type: 'number',
+    required: true,
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  unitPrice: number
+
+  @ApiProperty({
+    description: 'Preço unitário ajustado',
+    example: 949.99,
+    type: 'number',
+    required: true,
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  unitPriceAdjusted: number
+
+  @ApiProperty({
+    description: 'Preço total do item',
+    example: 1899.98,
+    type: 'number',
+    required: true,
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  totalPrice: number
+
+  @ApiProperty({
+    description: 'Valor de cashback aplicado',
+    example: 95.0,
+    type: 'number',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  appliedCashbackAmount?: number
+}
 
 export class SupplierStateConditionAdjustmentSchema {
   @ApiProperty({
@@ -304,14 +388,14 @@ export class OrderCalculationRequestSchema {
   @ApiProperty({
     description: 'Itens do pedido para cálculo',
     type: 'array',
-    schema: OrderItemSchema,
+    schema: OrderCalculationItemSchema,
     required: true,
   })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @ArrayMinSize(1, { message: VALIDATION_MESSAGES.ARRAY_MIN_SIZE(1) })
   @ValidateNested({ each: true })
-  @Type(() => OrderItemSchema)
-  items: OrderItemSchema[]
+  @Type(() => OrderCalculationItemSchema)
+  items: OrderCalculationItemSchema[]
 }
 
 export class OrderCalculationResponseSchema {
