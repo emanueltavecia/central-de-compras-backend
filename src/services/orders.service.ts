@@ -101,6 +101,14 @@ export class OrdersService {
           )
         }
 
+        if (product.supplierOrgId !== order.supplierOrgId) {
+          throw new HttpError(
+            `Produto ${product.name} não pertence ao fornecedor especificado`,
+            400,
+            'PRODUCT_SUPPLIER_MISMATCH',
+          )
+        }
+
         itemsWithProductData.push({
           productId: inputItem.productId,
           productNameSnapshot: product.name,
