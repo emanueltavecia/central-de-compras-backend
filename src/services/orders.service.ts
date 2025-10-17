@@ -16,8 +16,14 @@ import {
   AdjustmentDetailsSchema,
   OrderItemSchema,
 } from '@/schemas'
-import { CampaignScope, CampaignType, OrderStatus } from '@/enums'
+import {
+  CampaignScope,
+  CampaignType,
+  OrderStatus,
+  CashbackReferenceType,
+} from '@/enums'
 import { HttpError } from '@/utils'
+import { CashbackService } from './cashback.service'
 
 export class OrdersService {
   private ordersRepository: OrdersRepository
@@ -26,6 +32,7 @@ export class OrdersService {
   private supplierStateConditionsRepository: SupplierStateConditionsRepository
   private productRepository: ProductRepository
   private organizationsRepository: OrganizationsRepository
+  private cashbackService: CashbackService
 
   constructor() {
     this.ordersRepository = new OrdersRepository()
@@ -35,6 +42,7 @@ export class OrdersService {
       new SupplierStateConditionsRepository()
     this.productRepository = new ProductRepository()
     this.organizationsRepository = new OrganizationsRepository()
+    this.cashbackService = new CashbackService()
   }
 
   private removeReadOnlyFields(data: OrderSchema): OrderSchema {
@@ -58,7 +66,11 @@ export class OrdersService {
       quantity: item.quantity,
     }))
 
-    return { ...cleanData, items } as OrderSchema
+    return {
+      ...cleanData,
+      items,
+      cashbackUsed: data.cashbackUsed || 0,
+    } as OrderSchema
   }
 
   async createOrder(
@@ -141,12 +153,28 @@ export class OrdersService {
         storeState = primaryAddress?.state || storeOrganization.address[0].state
       }
 
+      const cashbackUsed = order.cashbackUsed || 0
+      if (cashbackUsed > 0) {
+        const hasBalance = await this.cashbackService.hasEnoughBalance(
+          order.storeOrgId,
+          cashbackUsed,
+        )
+        if (!hasBalance) {
+          throw new HttpError(
+            'Saldo insuficiente de cashback',
+            400,
+            'INSUFFICIENT_CASHBACK_BALANCE',
+          )
+        }
+      }
+
       const calculationRequest: OrderCalculationRequestSchema = {
         storeOrgId: order.storeOrgId,
         supplierOrgId: order.supplierOrgId,
         shippingAddressId: order.shippingAddressId,
         paymentConditionId: order.paymentConditionId,
         storeState,
+        cashbackUsed,
         items: itemsWithProductData,
       }
 
@@ -164,6 +192,7 @@ export class OrdersService {
         adjustments: calculatedValues.adjustments,
         totalAmount: calculatedValues.totalAmount,
         totalCashback: calculatedValues.totalCashback,
+        cashbackUsed,
         appliedSupplierStateConditionId:
           calculatedValues.appliedSupplierStateConditionId,
         createdBy,
@@ -184,6 +213,56 @@ export class OrdersService {
       } as OrderSchema
 
       const createdOrder = await this.ordersRepository.create(orderData)
+
+      if (cashbackUsed > 0) {
+        await this.cashbackService.useCashback({
+          organizationId: order.storeOrgId,
+          orderId: createdOrder.id!,
+          amount: cashbackUsed,
+          description: `Cashback utilizado no pedido ${createdOrder.id}`,
+        })
+      }
+
+      if (
+        calculatedValues.totalCashback > 0 &&
+        calculatedValues.appliedSupplierStateConditionId
+      ) {
+        const supplierCashback =
+          calculatedValues.adjustmentDetails?.supplierStateCondition
+            ?.cashbackPercent || 0
+        if (supplierCashback > 0) {
+          const supplierCashbackAmount =
+            (calculatedValues.subtotalAmount * supplierCashback) / 100
+          await this.cashbackService.addCashback({
+            organizationId: order.storeOrgId,
+            orderId: createdOrder.id!,
+            amount: supplierCashbackAmount,
+            referenceId: calculatedValues.appliedSupplierStateConditionId,
+            referenceType: CashbackReferenceType.SUPPLIER_STATE_CONDITION,
+            description: `Cashback ganho por condição de estado do fornecedor`,
+          })
+        }
+      }
+
+      if (calculatedValues.adjustmentDetails?.campaigns) {
+        for (const campaign of calculatedValues.adjustmentDetails.campaigns) {
+          if (
+            campaign.type === CampaignType.CASHBACK &&
+            campaign.cashbackPercent
+          ) {
+            const campaignCashbackAmount =
+              (calculatedValues.subtotalAmount * campaign.cashbackPercent) / 100
+            await this.cashbackService.addCashback({
+              organizationId: order.storeOrgId,
+              orderId: createdOrder.id!,
+              amount: campaignCashbackAmount,
+              referenceId: campaign.id,
+              referenceType: CashbackReferenceType.CAMPAIGN,
+              description: `Cashback ganho pela campanha "${campaign.name}"`,
+            })
+          }
+        }
+      }
 
       return createdOrder
     } catch (error) {
@@ -379,8 +458,13 @@ export class OrdersService {
       }
 
       const shippingCost = calculationData.shippingAddressId ? 25.0 : 0
+      const cashbackUsed = calculationData.cashbackUsed || 0
 
-      const totalAmount = subtotalAmount + shippingCost + adjustments
+      let totalAmount = subtotalAmount + shippingCost + adjustments
+
+      if (cashbackUsed > 0) {
+        totalAmount = Math.max(0, totalAmount - cashbackUsed)
+      }
 
       return {
         subtotalAmount: Math.round(subtotalAmount * 100) / 100,

@@ -22,6 +22,8 @@ CREATE TYPE permission_name AS ENUM (
   'manage_organizations'        -- admin
 );
 CREATE TYPE order_payment_method AS ENUM ('credit_card', 'boleto', 'pix');
+CREATE TYPE cashback_transaction_type AS ENUM ('earned', 'used');
+CREATE TYPE cashback_reference_type AS ENUM ('campaign', 'supplier_state_condition');
 
 -- TABLES
 CREATE TABLE roles (
@@ -176,6 +178,7 @@ CREATE TABLE orders (
   adjustments NUMERIC(12,2) DEFAULT 0,
   total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
   total_cashback NUMERIC(12,2) DEFAULT 0,
+  cashback_used NUMERIC(12,2) DEFAULT 0,
   applied_supplier_state_condition_id UUID REFERENCES supplier_state_conditions(id),
   payment_condition_id UUID REFERENCES payment_conditions(id),
   created_by UUID, -- FK adicionada depois
@@ -202,6 +205,29 @@ CREATE TABLE order_status_history (
   new_status order_status NOT NULL,
   changed_by UUID, -- FK adicionada depois
   note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE TABLE cashback_wallets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  available_balance NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (available_balance >= 0),
+  total_earned NUMERIC(12,2) NOT NULL DEFAULT 0,
+  total_used NUMERIC(12,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  UNIQUE (organization_id)
+);
+
+CREATE TABLE cashback_transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  cashback_wallet_id UUID NOT NULL REFERENCES cashback_wallets(id) ON DELETE CASCADE,
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  type cashback_transaction_type NOT NULL,
+  amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  reference_id UUID, -- ID da campaign, supplier_state_condition ou outro
+  reference_type cashback_reference_type,
+  description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
@@ -235,6 +261,10 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_users_org ON users(organization_id);
 CREATE INDEX idx_products_supplier_category ON products(supplier_org_id, category_id);
+CREATE INDEX idx_cashback_wallets_org ON cashback_wallets(organization_id);
+CREATE INDEX idx_cashback_transactions_wallet ON cashback_transactions(cashback_wallet_id);
+CREATE INDEX idx_cashback_transactions_order ON cashback_transactions(order_id);
+CREATE INDEX idx_cashback_transactions_type ON cashback_transactions(type);
 
 -- TRIGGERS
 CREATE OR REPLACE FUNCTION trg_check_product_supplier_type()
@@ -291,3 +321,44 @@ $$;
 CREATE TRIGGER check_user_org_exists
 BEFORE INSERT OR UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION trg_check_user_org_exists();
+
+-- cria wallet de cashback automaticamente ao criar uma organização
+CREATE OR REPLACE FUNCTION trg_create_cashback_wallet()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO cashback_wallets (organization_id)
+  VALUES (NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER create_cashback_wallet
+AFTER INSERT ON organizations
+FOR EACH ROW EXECUTE FUNCTION trg_create_cashback_wallet();
+
+-- atualiza o saldo da wallet de cashback
+CREATE OR REPLACE FUNCTION trg_update_cashback_wallet_balance()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.type = 'earned' THEN
+    UPDATE cashback_wallets 
+    SET 
+      available_balance = available_balance + NEW.amount,
+      total_earned = total_earned + NEW.amount,
+      updated_at = now()
+    WHERE id = NEW.cashback_wallet_id;
+  ELSIF NEW.type = 'used' THEN
+    UPDATE cashback_wallets 
+    SET 
+      available_balance = available_balance - NEW.amount,
+      total_used = total_used + NEW.amount,
+      updated_at = now()
+    WHERE id = NEW.cashback_wallet_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER update_cashback_wallet_balance
+AFTER INSERT ON cashback_transactions
+FOR EACH ROW EXECUTE FUNCTION trg_update_cashback_wallet_balance();

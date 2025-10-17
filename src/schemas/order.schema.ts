@@ -1,8 +1,10 @@
 import {
   ArrayMinSize,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsUUID,
+  Min,
   ValidateNested,
 } from 'class-validator'
 import { Type } from 'class-transformer'
@@ -117,6 +119,17 @@ export class OrderSchema {
     readOnly: true,
   })
   totalCashback?: number
+
+  @ApiProperty({
+    description: 'Valor de cashback utilizado',
+    example: 25.0,
+    type: 'number',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  cashbackUsed?: number
 
   @ApiProperty({
     description: 'ID da condição de estado do fornecedor aplicada',

@@ -386,6 +386,20 @@ export class OrderCalculationRequestSchema {
   storeState?: string
 
   @ApiProperty({
+    description: 'Valor de cashback a ser utilizado',
+    example: 25.5,
+    type: 'number',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
+  )
+  @Min(0, { message: VALIDATION_MESSAGES.MIN_VALUE(0) })
+  cashbackUsed?: number
+
+  @ApiProperty({
     description: 'Itens do pedido para cálculo',
     type: 'array',
     schema: OrderCalculationItemSchema,
