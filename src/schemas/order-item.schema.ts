@@ -1,11 +1,4 @@
-import {
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsPositive,
-  IsUUID,
-  Min,
-} from 'class-validator'
+import { IsInt, IsNotEmpty, IsUUID, Min } from 'class-validator'
 import { ApiProperty } from '@/decorators'
 import { VALIDATION_MESSAGES } from '@/utils'
 
@@ -54,12 +47,8 @@ export class OrderItemSchema {
     example: 999.99,
     type: 'number',
     required: true,
+    readOnly: true,
   })
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
-  )
-  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   unitPrice: number
 
   @ApiProperty({
@@ -67,12 +56,8 @@ export class OrderItemSchema {
     example: 949.99,
     type: 'number',
     required: true,
+    readOnly: true,
   })
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
-  )
-  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   unitPriceAdjusted: number
 
   @ApiProperty({
@@ -91,12 +76,8 @@ export class OrderItemSchema {
     example: 1899.98,
     type: 'number',
     required: true,
+    readOnly: true,
   })
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: VALIDATION_MESSAGES.INVALID_NUMBER },
-  )
-  @IsPositive({ message: VALIDATION_MESSAGES.INVALID_POSITIVE })
   totalPrice: number
 
   @ApiProperty({

@@ -4,17 +4,26 @@ import {
   CampaignsRepository,
   SupplierStateConditionsRepository,
   ProductRepository,
+  OrganizationsRepository,
 } from '@/repository'
 import {
   OrderSchema,
   OrderFiltersSchema,
   OrderCalculationRequestSchema,
   OrderCalculationResponseSchema,
+  OrderCalculationItemSchema,
   CampaignSchema,
   AdjustmentDetailsSchema,
+  OrderItemSchema,
 } from '@/schemas'
-import { CampaignScope, CampaignType } from '@/enums'
+import {
+  CampaignScope,
+  CampaignType,
+  OrderStatus,
+  CashbackReferenceType,
+} from '@/enums'
 import { HttpError } from '@/utils'
+import { CashbackService } from './cashback.service'
 
 export class OrdersService {
   private ordersRepository: OrdersRepository
@@ -22,6 +31,8 @@ export class OrdersService {
   private campaignsRepository: CampaignsRepository
   private supplierStateConditionsRepository: SupplierStateConditionsRepository
   private productRepository: ProductRepository
+  private organizationsRepository: OrganizationsRepository
+  private cashbackService: CashbackService
 
   constructor() {
     this.ordersRepository = new OrdersRepository()
@@ -30,80 +41,234 @@ export class OrdersService {
     this.supplierStateConditionsRepository =
       new SupplierStateConditionsRepository()
     this.productRepository = new ProductRepository()
+    this.organizationsRepository = new OrganizationsRepository()
+    this.cashbackService = new CashbackService()
   }
 
   private removeReadOnlyFields(data: OrderSchema): OrderSchema {
     const {
       id: _id,
+      status: _status,
       placedAt: _placedAt,
       createdAt: _createdAt,
+      subtotalAmount: _subtotalAmount,
+      shippingCost: _shippingCost,
+      adjustments: _adjustments,
+      totalAmount: _totalAmount,
       totalCashback: _totalCashback,
       appliedSupplierStateConditionId: _appliedSupplierStateConditionId,
+      createdBy: _createdBy,
       ...cleanData
     } = data
-    return cleanData as OrderSchema
+
+    const items = data.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }))
+
+    return {
+      ...cleanData,
+      items,
+      cashbackUsed: data.cashbackUsed || 0,
+    } as OrderSchema
   }
 
   async createOrder(
-    orderData: Omit<OrderSchema, 'id' | 'createdAt' | 'placedAt'>,
+    data: OrderSchema,
+    createdBy?: string,
   ): Promise<OrderSchema> {
     try {
-      const cleanData = this.removeReadOnlyFields(orderData as OrderSchema)
+      const order = this.removeReadOnlyFields(data)
 
-      if (cleanData.items && cleanData.items.length > 0) {
-        // Buscar nomes dos produtos para preencher productNameSnapshot
-        const itemsWithProductNames = await Promise.all(
-          cleanData.items.map(async (item) => {
-            const product = await this.productRepository.findById(
-              item.productId,
-            )
-            if (!product) {
-              throw new HttpError(
-                `Produto com ID ${item.productId} não encontrado`,
-                404,
-                'PRODUCT_NOT_FOUND',
-              )
-            }
-            return {
-              ...item,
-              productNameSnapshot: product.name,
-            }
-          }),
+      const itemsWithProductData: OrderCalculationItemSchema[] = []
+
+      for (const inputItem of order.items) {
+        const product = await this.productRepository.findById(
+          inputItem.productId,
         )
-
-        const calculationRequest: OrderCalculationRequestSchema = {
-          storeOrgId: cleanData.storeOrgId!,
-          supplierOrgId: cleanData.supplierOrgId!,
-          shippingAddressId: cleanData.shippingAddressId,
-          paymentConditionId: cleanData.paymentConditionId,
-          items: itemsWithProductNames,
+        if (!product) {
+          throw new HttpError(
+            `Produto com ID ${inputItem.productId} não encontrado`,
+            404,
+            'PRODUCT_NOT_FOUND',
+          )
         }
 
-        const calculatedValues =
-          await this.calculateOrderValues(calculationRequest)
-
-        cleanData.items = itemsWithProductNames
-        cleanData.subtotalAmount = calculatedValues.subtotalAmount
-        cleanData.shippingCost = calculatedValues.shippingCost
-        cleanData.adjustments = calculatedValues.adjustments
-        cleanData.totalAmount = calculatedValues.totalAmount
+        if (!product.active) {
+          throw new HttpError(
+            `Produto ${product.name} não está ativo`,
+            400,
+            'PRODUCT_INACTIVE',
+          )
+        }
 
         if (
-          calculatedValues.totalCashback > 0 ||
-          calculatedValues.appliedSupplierStateConditionId
+          product.availableQuantity !== undefined &&
+          product.availableQuantity < inputItem.quantity
         ) {
-          cleanData.totalCashback = calculatedValues.totalCashback
-          cleanData.appliedSupplierStateConditionId =
-            calculatedValues.appliedSupplierStateConditionId
+          throw new HttpError(
+            `Quantidade insuficiente em estoque para o produto ${product.name}. Disponível: ${product.availableQuantity}, Solicitado: ${inputItem.quantity}`,
+            400,
+            'INSUFFICIENT_STOCK',
+          )
+        }
+
+        if (product.supplierOrgId !== order.supplierOrgId) {
+          throw new HttpError(
+            `Produto ${product.name} não pertence ao fornecedor especificado`,
+            400,
+            'PRODUCT_SUPPLIER_MISMATCH',
+          )
+        }
+
+        itemsWithProductData.push({
+          productId: inputItem.productId,
+          productNameSnapshot: product.name,
+          quantity: inputItem.quantity,
+          unitPrice: product.basePrice,
+          unitPriceAdjusted: product.basePrice, // Será recalculado abaixo
+          totalPrice: product.basePrice * inputItem.quantity, // Será recalculado abaixo
+          appliedCashbackAmount: 0, // Será recalculado abaixo
+        })
+      }
+
+      const storeOrganization = await this.organizationsRepository.findById(
+        order.storeOrgId,
+        true,
+      )
+
+      if (!storeOrganization) {
+        throw new HttpError(
+          `Organização da loja com ID ${order.storeOrgId} não encontrada`,
+          404,
+          'STORE_ORGANIZATION_NOT_FOUND',
+        )
+      }
+
+      let storeState: string | undefined
+      if (storeOrganization.address && storeOrganization.address.length > 0) {
+        const primaryAddress = storeOrganization.address.find(
+          (addr) => addr.isPrimary,
+        )
+        storeState = primaryAddress?.state || storeOrganization.address[0].state
+      }
+
+      const cashbackUsed = order.cashbackUsed || 0
+      if (cashbackUsed > 0) {
+        const hasBalance = await this.cashbackService.hasEnoughBalance(
+          order.storeOrgId,
+          cashbackUsed,
+        )
+        if (!hasBalance) {
+          throw new HttpError(
+            'Saldo insuficiente de cashback',
+            400,
+            'INSUFFICIENT_CASHBACK_BALANCE',
+          )
         }
       }
 
-      const createdOrder = await this.ordersRepository.create(
-        cleanData as OrderSchema,
-      )
+      const calculationRequest: OrderCalculationRequestSchema = {
+        storeOrgId: order.storeOrgId,
+        supplierOrgId: order.supplierOrgId,
+        shippingAddressId: order.shippingAddressId,
+        paymentConditionId: order.paymentConditionId,
+        storeState,
+        cashbackUsed,
+        items: itemsWithProductData,
+      }
+
+      const calculatedValues =
+        await this.calculateOrderValues(calculationRequest)
+
+      const orderData: OrderSchema = {
+        storeOrgId: order.storeOrgId,
+        supplierOrgId: order.supplierOrgId,
+        status: OrderStatus.PLACED,
+        shippingAddressId: order.shippingAddressId,
+        paymentConditionId: order.paymentConditionId,
+        subtotalAmount: calculatedValues.subtotalAmount,
+        shippingCost: calculatedValues.shippingCost,
+        adjustments: calculatedValues.adjustments,
+        totalAmount: calculatedValues.totalAmount,
+        totalCashback: calculatedValues.totalCashback,
+        cashbackUsed,
+        appliedSupplierStateConditionId:
+          calculatedValues.appliedSupplierStateConditionId,
+        createdBy,
+        items: calculatedValues.calculatedItems.map(
+          (item) =>
+            ({
+              productId: item.productId,
+              productNameSnapshot:
+                itemsWithProductData.find((i) => i.productId === item.productId)
+                  ?.productNameSnapshot || '',
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              unitPriceAdjusted: item.unitPriceAdjusted,
+              totalPrice: item.totalPrice,
+              appliedCashbackAmount: item.appliedCashbackAmount,
+            }) as OrderItemSchema,
+        ),
+      } as OrderSchema
+
+      const createdOrder = await this.ordersRepository.create(orderData)
+
+      if (cashbackUsed > 0) {
+        await this.cashbackService.useCashback({
+          organizationId: order.storeOrgId,
+          orderId: createdOrder.id!,
+          amount: cashbackUsed,
+          description: `Cashback utilizado no pedido ${createdOrder.id}`,
+        })
+      }
+
+      if (
+        calculatedValues.totalCashback > 0 &&
+        calculatedValues.appliedSupplierStateConditionId
+      ) {
+        const supplierCashback =
+          calculatedValues.adjustmentDetails?.supplierStateCondition
+            ?.cashbackPercent || 0
+        if (supplierCashback > 0) {
+          const supplierCashbackAmount =
+            (calculatedValues.subtotalAmount * supplierCashback) / 100
+          await this.cashbackService.addCashback({
+            organizationId: order.storeOrgId,
+            orderId: createdOrder.id!,
+            amount: supplierCashbackAmount,
+            referenceId: calculatedValues.appliedSupplierStateConditionId,
+            referenceType: CashbackReferenceType.SUPPLIER_STATE_CONDITION,
+            description: `Cashback ganho por condição de estado do fornecedor`,
+          })
+        }
+      }
+
+      if (calculatedValues.adjustmentDetails?.campaigns) {
+        for (const campaign of calculatedValues.adjustmentDetails.campaigns) {
+          if (
+            campaign.type === CampaignType.CASHBACK &&
+            campaign.cashbackPercent
+          ) {
+            const campaignCashbackAmount =
+              (calculatedValues.subtotalAmount * campaign.cashbackPercent) / 100
+            await this.cashbackService.addCashback({
+              organizationId: order.storeOrgId,
+              orderId: createdOrder.id!,
+              amount: campaignCashbackAmount,
+              referenceId: campaign.id,
+              referenceType: CashbackReferenceType.CAMPAIGN,
+              description: `Cashback ganho pela campanha "${campaign.name}"`,
+            })
+          }
+        }
+      }
 
       return createdOrder
     } catch (error) {
+      if (error instanceof HttpError) {
+        throw error
+      }
       console.error('Error creating order:', error)
       throw new HttpError('Erro ao criar pedido', 500, 'ORDER_CREATE_ERROR')
     }
@@ -138,84 +303,6 @@ export class OrdersService {
     }
   }
 
-  async updateOrder(id: string, orderData: OrderSchema): Promise<OrderSchema> {
-    try {
-      const existingOrder = await this.ordersRepository.findById(id)
-
-      if (!existingOrder) {
-        throw new HttpError('Pedido não encontrado', 404, 'ORDER_NOT_FOUND')
-      }
-
-      const cleanData = this.removeReadOnlyFields(orderData as OrderSchema)
-
-      // Se os itens estão sendo atualizados, buscar nomes dos produtos
-      if (cleanData.items && cleanData.items.length > 0) {
-        cleanData.items = await Promise.all(
-          cleanData.items.map(async (item) => {
-            // Se já tem productNameSnapshot, mantém. Senão busca do produto
-            if (!item.productNameSnapshot) {
-              const product = await this.productRepository.findById(
-                item.productId,
-              )
-              if (!product) {
-                throw new HttpError(
-                  `Produto com ID ${item.productId} não encontrado`,
-                  404,
-                  'PRODUCT_NOT_FOUND',
-                )
-              }
-              return {
-                ...item,
-                productNameSnapshot: product.name,
-              }
-            }
-            return item
-          }),
-        )
-      }
-
-      const updatedOrder = await this.ordersRepository.update(id, cleanData)
-
-      if (!updatedOrder) {
-        throw new HttpError(
-          'Erro ao atualizar pedido',
-          500,
-          'ORDER_UPDATE_ERROR',
-        )
-      }
-
-      return updatedOrder
-    } catch (error) {
-      if (error instanceof HttpError) {
-        throw error
-      }
-      console.error('Error updating order:', error)
-      throw new HttpError('Erro ao atualizar pedido', 500, 'ORDER_UPDATE_ERROR')
-    }
-  }
-
-  async deleteOrder(id: string): Promise<void> {
-    try {
-      const existingOrder = await this.ordersRepository.findById(id)
-
-      if (!existingOrder) {
-        throw new HttpError('Pedido não encontrado', 404, 'ORDER_NOT_FOUND')
-      }
-
-      const deleted = await this.ordersRepository.delete(id)
-
-      if (!deleted) {
-        throw new HttpError('Erro ao deletar pedido', 500, 'ORDER_DELETE_ERROR')
-      }
-    } catch (error) {
-      if (error instanceof HttpError) {
-        throw error
-      }
-      console.error('Error deleting order:', error)
-      throw new HttpError('Erro ao deletar pedido', 500, 'ORDER_DELETE_ERROR')
-    }
-  }
-
   async calculateOrderValues(
     calculationData: OrderCalculationRequestSchema,
   ): Promise<OrderCalculationResponseSchema> {
@@ -240,9 +327,13 @@ export class OrdersService {
       let appliedSupplierStateConditionId: string | undefined
       const adjustmentDetails: AdjustmentDetailsSchema = {}
 
-      if (calculationData.storeOrgId && calculationData.supplierOrgId) {
+      if (
+        calculationData.storeOrgId &&
+        calculationData.supplierOrgId &&
+        calculationData.storeState
+      ) {
         try {
-          const storeState = calculationData.storeState || 'SP'
+          const storeState = calculationData.storeState
 
           const supplierStateConditions =
             await this.supplierStateConditionsRepository.findAll({
@@ -367,8 +458,13 @@ export class OrdersService {
       }
 
       const shippingCost = calculationData.shippingAddressId ? 25.0 : 0
+      const cashbackUsed = calculationData.cashbackUsed || 0
 
-      const totalAmount = subtotalAmount + shippingCost + adjustments
+      let totalAmount = subtotalAmount + shippingCost + adjustments
+
+      if (cashbackUsed > 0) {
+        totalAmount = Math.max(0, totalAmount - cashbackUsed)
+      }
 
       return {
         subtotalAmount: Math.round(subtotalAmount * 100) / 100,
