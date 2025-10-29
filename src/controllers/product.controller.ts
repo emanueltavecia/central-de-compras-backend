@@ -11,6 +11,7 @@ import { createSuccessResponse, createErrorResponse } from '@/utils'
 import { Request, Response } from 'express'
 import { ProductService } from '@/services'
 import { AuthenticatedRequest } from '@/middlewares'
+import { PermissionName } from '@/enums'
 
 @ApiController('/products', ['Product'])
 export class ProductController {
@@ -25,6 +26,7 @@ export class ProductController {
     path: '/',
     summary: 'Cadastra um novo produto',
     body: ProductSchema,
+    permissions: [PermissionName.MANAGE_PRODUCTS],
     responses: {
       201: SuccessResponseSchema.create({
         schema: ProductSchema,
@@ -98,6 +100,7 @@ export class ProductController {
     summary: 'Edita um produto existente',
     params: IdParamSchema,
     body: ProductSchema,
+    permissions: [PermissionName.MANAGE_PRODUCTS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: ProductSchema,
@@ -134,6 +137,7 @@ export class ProductController {
     summary: 'Atualiza o status (ativo/inativo) do produto',
     params: IdParamSchema,
     body: UpdateProductStatusSchema,
+    permissions: [PermissionName.MANAGE_PRODUCTS],
     responses: {
       200: SuccessResponseSchema.create({
         schema: ProductSchema,
