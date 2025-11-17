@@ -7,11 +7,13 @@ import {
   IsStrongPassword,
   IsUUID,
   Validate,
+  Matches,
 } from 'class-validator'
 import { ApiProperty } from '@/decorators'
 import { UserAccountStatus } from '@/enums'
 import { IsPhoneValidator, VALIDATION_MESSAGES } from '@/utils'
 import { RoleSchema } from './role.schema'
+import { OrganizationSchema } from './organization.schema'
 
 export class UserSchema {
   @ApiProperty({
@@ -43,19 +45,17 @@ export class UserSchema {
   })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  @IsStrongPassword(
-    {
-      minLength: 8,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 1,
-      minSymbols: 1,
-    },
-    {
-      message: VALIDATION_MESSAGES.INVALID_STRONG_PASSWORD,
-    },
-  )
+  @Matches(/^[A-Za-z0-9]{6,}$/i, { message: 'A senha deve ter pelo menos 6 caracteres, contendo apenas letras e números.' })
   password?: string
+
+  @ApiProperty({
+    description: 'Senha em texto plano (apenas para exibição)',
+    example: 'abc123',
+    type: 'string',
+    required: false,
+    readOnly: true,
+  })
+  passwordPlain?: string
 
   @ApiProperty({
     description: 'Nome completo do usuário',
@@ -109,6 +109,15 @@ export class UserSchema {
   organizationId: string
 
   @ApiProperty({
+    description: 'Organização do usuário',
+    type: 'object',
+    schema: OrganizationSchema,
+    required: false,
+    readOnly: true,
+  })
+  organization?: OrganizationSchema
+
+  @ApiProperty({
     description: 'Status da conta do usuário',
     example: UserAccountStatus.ACTIVE,
     type: 'string',
@@ -136,6 +145,52 @@ export class UserSchema {
     readOnly: true,
   })
   createdAt: string
+}
+
+export class UpdateUserSchema {
+  @ApiProperty({
+    description: 'Email do usuário',
+    example: 'usuario@exemplo.com',
+    type: 'string',
+    format: 'email',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail({}, { message: VALIDATION_MESSAGES.INVALID_EMAIL })
+  email?: string
+
+  @ApiProperty({
+    description: 'Senha do usuário',
+    example: 'a1B2c3d4!',
+    type: 'string',
+    required: false,
+    writeOnly: true,
+  })
+  @IsOptional()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Matches(/^[A-Za-z0-9]{6,}$/i, { message: 'A senha deve ter pelo menos 6 caracteres, contendo apenas letras e números.' })
+  password?: string
+
+  @ApiProperty({
+    description: 'Nome completo do usuário',
+    example: 'João Silva',
+    type: 'string',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  fullName?: string
+
+  @ApiProperty({
+    description: 'Telefone do usuário',
+    example: '48999999999',
+    type: 'string',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
+  @Validate(IsPhoneValidator)
+  phone?: string
 }
 
 export class UpdateUserStatusSchema {

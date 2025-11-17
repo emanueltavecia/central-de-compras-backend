@@ -202,4 +202,10 @@ export class OrganizationsRepository extends BaseRepository {
     const result = await this.executeQuery(query, [email])
     return result.length > 0
   }
+
+  async checkExistsByPhone(phone: string): Promise<boolean> {
+    const query = 'SELECT 1 FROM organizations WHERE phone = $1'
+    const result = await this.executeQuery(query, [phone])
+    return result.length > 0
+  }
 }

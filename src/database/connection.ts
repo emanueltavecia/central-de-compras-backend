@@ -27,6 +27,61 @@ class Database {
     this.pool.on('error', (err) => {
       console.error('Unexpected error on idle client', err)
     })
+
+    // Inicializa esquema de forma síncrona
+    this.initializeSchema()
+  }
+
+  private async initializeSchema() {
+    try {
+      // Garante coluna password_plain
+      await this.pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_plain TEXT')
+      console.log('✓ password_plain column ensured')
+      
+      // Garante esquema de change_requests
+      await this.ensureChangeRequestsSchema()
+      console.log('✓ change_requests schema ensured')
+    } catch (err) {
+      console.error('Failed to initialize database schema:', err)
+    }
+  }
+
+  private async ensureChangeRequestsSchema() {
+    try {
+      // Ensure enum type exists
+      await this.pool.query(
+        "DO $$ BEGIN CREATE TYPE change_request_status AS ENUM ('pending','approved','rejected'); EXCEPTION WHEN duplicate_object THEN null; END $$;"
+      )
+
+      // Ensure table exists
+      await this.pool.query(
+        `CREATE TABLE IF NOT EXISTS change_requests (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+          requested_changes JSONB NOT NULL,
+          status change_request_status NOT NULL DEFAULT 'pending',
+          reviewed_by UUID REFERENCES users(id),
+          reviewed_at TIMESTAMP WITH TIME ZONE,
+          review_note TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        )`
+      )
+
+      // Ensure indexes exist
+      await this.pool.query(
+        'CREATE INDEX IF NOT EXISTS idx_change_requests_user ON change_requests(user_id)'
+      )
+      await this.pool.query(
+        'CREATE INDEX IF NOT EXISTS idx_change_requests_org ON change_requests(organization_id)'
+      )
+      await this.pool.query(
+        'CREATE INDEX IF NOT EXISTS idx_change_requests_status ON change_requests(status)'
+      )
+    } catch (err) {
+      console.error('Error creating change_requests schema:', err)
+      throw err
+    }
   }
 
   async getConnection(): Promise<PoolClient> {

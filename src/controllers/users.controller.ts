@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '@/middlewares'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
 import {
   UserSchema,
+  UpdateUserSchema,
   ErrorResponseSchema,
   SuccessResponseSchema,
   PermissionSchema,
@@ -136,7 +137,7 @@ export class UsersController {
     path: '/:id',
     summary: 'Atualizar dados do usuário',
     permissions: [PermissionName.MANAGE_USERS],
-    body: UserSchema,
+    body: UpdateUserSchema,
     params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -152,7 +153,7 @@ export class UsersController {
     },
   })
   async updateUser(
-    userData: UserSchema,
+    userData: UpdateUserSchema,
     req: AuthenticatedRequest,
     res: Response,
   ) {
@@ -327,4 +328,5 @@ export class UsersController {
         .json(createErrorResponse(error.message, error.errorCode))
     }
   }
+
 }

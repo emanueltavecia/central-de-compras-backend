@@ -5,20 +5,31 @@ export class AuthRepository extends BaseRepository {
   async findByEmail(email: string): Promise<UserSchema | null> {
     const query = `
       SELECT 
-        u.id,
-        u.email,
-        u.password,
-        u.full_name,
-        u.phone,
-        u.role_id,
-        u.organization_id,
-        u.status,
-        u.created_by,
-        u.created_at,
-        r.id as role_id,
-        r.name as role_name,
-        r.description as role_description,
-        r.created_at as role_created_at,
+        u.id as "id",
+        u.email as "email",
+        u.password as "password",
+        u.password_plain as "passwordPlain",
+        u.full_name as "fullName",
+        u.phone as "phone",
+        u.role_id as "roleId",
+        u.organization_id as "organizationId",
+        u.status as "status",
+        u.created_by as "createdBy",
+        u.created_at as "createdAt",
+        r.id as "roleId",
+        r.name as "roleName",
+        r.description as "roleDescription",
+        r.created_at as "roleCreatedAt",
+        o.id as "organizationId",
+        o.type as "organizationType",
+        o.legal_name as "organizationLegalName",
+        o.trade_name as "organizationTradeName",
+        o.tax_id as "organizationTaxId",
+        o.phone as "organizationPhone",
+        o.email as "organizationEmail",
+        o.website as "organizationWebsite",
+        o.active as "organizationActive",
+        o.created_at as "organizationCreatedAt",
         COALESCE(
           JSON_AGG(
             JSON_BUILD_OBJECT(
@@ -28,13 +39,14 @@ export class AuthRepository extends BaseRepository {
             )
           ) FILTER (WHERE p.id IS NOT NULL),
           '[]'::json
-        ) as role_permissions
+        ) as "rolePermissions"
       FROM users u
       INNER JOIN roles r ON u.role_id = r.id
+      LEFT JOIN organizations o ON u.organization_id = o.id
       LEFT JOIN role_permissions rp ON r.id = rp.role_id
       LEFT JOIN permissions p ON rp.permission_id = p.id
       WHERE u.email = $1
-      GROUP BY u.id, r.id
+      GROUP BY u.id, r.id, o.id
     `
 
     const result = await this.executeQuery<any>(query, [email])
@@ -48,6 +60,7 @@ export class AuthRepository extends BaseRepository {
       id: user.id,
       email: user.email,
       password: user.password,
+      passwordPlain: user.passwordPlain,
       fullName: user.fullName,
       phone: user.phone,
       roleId: user.roleId,
@@ -62,25 +75,48 @@ export class AuthRepository extends BaseRepository {
         createdAt: user.roleCreatedAt,
         permissions: user.rolePermissions || [],
       },
+      organization: user.organizationId ? {
+        id: user.organizationId,
+        type: user.organizationType,
+        legalName: user.organizationLegalName,
+        tradeName: user.organizationTradeName,
+        taxId: user.organizationTaxId,
+        phone: user.organizationPhone,
+        email: user.organizationEmail,
+        website: user.organizationWebsite,
+        active: user.organizationActive,
+        createdAt: user.organizationCreatedAt,
+      } : undefined,
     }
   }
 
   async findById(id: string): Promise<UserSchema | null> {
     const query = `
       SELECT 
-        u.id,
-        u.email,
-        u.full_name,
-        u.phone,
-        u.role_id,
-        u.organization_id,
-        u.status,
-        u.created_by,
-        u.created_at,
-        r.id as role_id,
-        r.name as role_name,
-        r.description as role_description,
-        r.created_at as role_created_at,
+        u.id as "id",
+        u.email as "email",
+        u.password_plain as "passwordPlain",
+        u.full_name as "fullName",
+        u.phone as "phone",
+        u.role_id as "roleId",
+        u.organization_id as "organizationId",
+        u.status as "status",
+        u.created_by as "createdBy",
+        u.created_at as "createdAt",
+        r.id as "roleId",
+        r.name as "roleName",
+        r.description as "roleDescription",
+        r.created_at as "roleCreatedAt",
+        o.id as "organizationId",
+        o.type as "organizationType",
+        o.legal_name as "organizationLegalName",
+        o.trade_name as "organizationTradeName",
+        o.tax_id as "organizationTaxId",
+        o.phone as "organizationPhone",
+        o.email as "organizationEmail",
+        o.website as "organizationWebsite",
+        o.active as "organizationActive",
+        o.created_at as "organizationCreatedAt",
         COALESCE(
           JSON_AGG(
             JSON_BUILD_OBJECT(
@@ -90,13 +126,14 @@ export class AuthRepository extends BaseRepository {
             )
           ) FILTER (WHERE p.id IS NOT NULL),
           '[]'::json
-        ) as role_permissions
+        ) as "rolePermissions"
       FROM users u
       INNER JOIN roles r ON u.role_id = r.id
+      LEFT JOIN organizations o ON u.organization_id = o.id
       LEFT JOIN role_permissions rp ON r.id = rp.role_id
       LEFT JOIN permissions p ON rp.permission_id = p.id
       WHERE u.id = $1
-      GROUP BY u.id, r.id
+      GROUP BY u.id, r.id, o.id
     `
 
     const result = await this.executeQuery<any>(query, [id])
@@ -109,6 +146,7 @@ export class AuthRepository extends BaseRepository {
     return {
       id: user.id,
       email: user.email,
+      passwordPlain: user.passwordPlain,
       fullName: user.fullName,
       phone: user.phone,
       roleId: user.roleId,
@@ -123,6 +161,18 @@ export class AuthRepository extends BaseRepository {
         createdAt: user.roleCreatedAt,
         permissions: user.rolePermissions || [],
       },
+      organization: user.organizationId ? {
+        id: user.organizationId,
+        type: user.organizationType,
+        legalName: user.organizationLegalName,
+        tradeName: user.organizationTradeName,
+        taxId: user.organizationTaxId,
+        phone: user.organizationPhone,
+        email: user.organizationEmail,
+        website: user.organizationWebsite,
+        active: user.organizationActive,
+        createdAt: user.organizationCreatedAt,
+      } : undefined,
     }
   }
 

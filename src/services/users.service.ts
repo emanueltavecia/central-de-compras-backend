@@ -38,7 +38,8 @@ export class UsersService {
         )
     }
 
-    const hashedPassword = await bcrypt.hash(userData.password!, 12)
+  const plainPassword = userData.password!
+  const hashedPassword = await bcrypt.hash(plainPassword, 12)
 
     return this.repo.create(
       {
@@ -48,6 +49,7 @@ export class UsersService {
         status: UserAccountStatus.ACTIVE,
       },
       currentUserId,
+      plainPassword,
     )
   }
 
@@ -68,7 +70,12 @@ export class UsersService {
     organizationId: string,
     userData: Partial<UserSchema>,
   ) {
-    if (userData.email) {
+    const existingUser = await this.repo.findById(id)
+    if (!existingUser) {
+      throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
+    }
+
+    if (userData.email && userData.email !== existingUser.email) {
       const emailExists = await this.repo.checkEmailExists(userData.email)
       if (emailExists) {
         throw new HttpError('E-mail já está em uso', 409, 'EMAIL_EXISTS')
@@ -76,11 +83,11 @@ export class UsersService {
     }
 
     const dataToUpdate: Partial<UserSchema> = { ...userData }
-
+    let passwordPlainParam: string | undefined
     if (userData.password) {
+      passwordPlainParam = userData.password
       dataToUpdate.password = await bcrypt.hash(userData.password, 12)
     }
-
     if (userData.organizationId) {
       const organization = await this.orgRepo.findById(userData.organizationId)
       if (!organization) {
@@ -109,22 +116,14 @@ export class UsersService {
       dataToUpdate.roleId = await this.repo.getRoleIdByName(roleName)
     }
 
-    return this.repo.update(id, organizationId, dataToUpdate)
+  return this.repo.update(id, organizationId, dataToUpdate, passwordPlainParam)
   }
 
   async updateStatus(
     id: string,
     status: UserAccountStatus,
-    currentUserId: string,
+    organizationId: string,
   ) {
-    if (id === currentUserId) {
-      throw new HttpError(
-        'Não é possível alterar seu próprio status',
-        400,
-        'CANNOT_SELF_DISABLE',
-      )
-    }
-
     const user = await this.repo.findById(id)
     if (!user)
       throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
@@ -137,7 +136,7 @@ export class UsersService {
       )
     }
 
-    return this.repo.updateStatus(id, currentUserId, status)
+    return this.repo.updateStatus(id, organizationId, status)
   }
 
   async deleteUser(id: string, currentUserId: string) {
@@ -149,7 +148,21 @@ export class UsersService {
       )
     }
 
-    return this.repo.delete(id)
+      // Verificar se o usuário está inativo
+      const user = await this.repo.findById(id)
+      if (!user) {
+        throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
+      }
+
+      if (user.status === UserAccountStatus.ACTIVE) {
+        throw new HttpError(
+          'Não é possível excluir um usuário ativo. Inative-o primeiro.',
+          400,
+          'CANNOT_DELETE_ACTIVE_USER',
+        )
+      }
+
+      return this.repo.delete(id)
   }
 
   async getUserPermissions(id: string, organizationId: string) {
