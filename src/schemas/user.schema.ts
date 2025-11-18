@@ -4,14 +4,15 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsStrongPassword,
   IsUUID,
   Validate,
+  Matches,
 } from 'class-validator'
 import { ApiProperty } from '@/decorators'
 import { UserAccountStatus } from '@/enums'
 import { IsPhoneValidator, VALIDATION_MESSAGES } from '@/utils'
 import { RoleSchema } from './role.schema'
+import { OrganizationSchema } from './organization.schema'
 
 export class UserSchema {
   @ApiProperty({
@@ -43,18 +44,10 @@ export class UserSchema {
   })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  @IsStrongPassword(
-    {
-      minLength: 8,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 1,
-      minSymbols: 1,
-    },
-    {
-      message: VALIDATION_MESSAGES.INVALID_STRONG_PASSWORD,
-    },
-  )
+  @Matches(/^[A-Za-z0-9]{6,}$/i, {
+    message:
+      'A senha deve ter pelo menos 6 caracteres, contendo apenas letras e números.',
+  })
   password?: string
 
   @ApiProperty({
@@ -107,6 +100,15 @@ export class UserSchema {
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   organizationId: string
+
+  @ApiProperty({
+    description: 'Organização do usuário',
+    type: 'object',
+    schema: OrganizationSchema,
+    required: false,
+    readOnly: true,
+  })
+  organization?: OrganizationSchema
 
   @ApiProperty({
     description: 'Status da conta do usuário',

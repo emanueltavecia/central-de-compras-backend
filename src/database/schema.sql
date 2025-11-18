@@ -7,6 +7,7 @@ CREATE TYPE order_status AS ENUM ('draft','placed','confirmed','separated','ship
 CREATE TYPE campaign_type AS ENUM ('cashback','gift');
 CREATE TYPE campaign_scope AS ENUM ('all','category','product');
 CREATE TYPE user_account_status AS ENUM ('active','inactive','suspended');
+CREATE TYPE change_request_status AS ENUM ('pending','approved','rejected');
 CREATE TYPE permission_name AS ENUM (
   'manage_users',               -- admin
   'manage_stores',              -- admin
@@ -231,6 +232,18 @@ CREATE TABLE cashback_transactions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+CREATE TABLE change_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  requested_changes JSONB NOT NULL,
+  status change_request_status NOT NULL DEFAULT 'pending',
+  reviewed_by UUID REFERENCES users(id),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  review_note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- FOREIGN KEYS ADDED AFTER TO BREAK CYCLES
 ALTER TABLE users
   ADD CONSTRAINT fk_users_org FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
@@ -265,6 +278,9 @@ CREATE INDEX idx_cashback_wallets_org ON cashback_wallets(organization_id);
 CREATE INDEX idx_cashback_transactions_wallet ON cashback_transactions(cashback_wallet_id);
 CREATE INDEX idx_cashback_transactions_order ON cashback_transactions(order_id);
 CREATE INDEX idx_cashback_transactions_type ON cashback_transactions(type);
+CREATE INDEX idx_change_requests_user ON change_requests(user_id);
+CREATE INDEX idx_change_requests_org ON change_requests(organization_id);
+CREATE INDEX idx_change_requests_status ON change_requests(status);
 
 -- TRIGGERS
 CREATE OR REPLACE FUNCTION trg_check_product_supplier_type()

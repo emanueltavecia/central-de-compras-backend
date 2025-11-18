@@ -57,6 +57,16 @@ export class UsersRepository extends BaseRepository {
         r.name as role_name,
         r.description as role_description,
         r.created_at as role_created_at,
+        o.id as organization_id,
+        o.type as organization_type,
+        o.legal_name as organization_legal_name,
+        o.trade_name as organization_trade_name,
+        o.tax_id as organization_tax_id,
+        o.phone as organization_phone,
+        o.email as organization_email,
+        o.website as organization_website,
+        o.active as organization_active,
+        o.created_at as organization_created_at,
         COALESCE(
           JSON_AGG(
             JSON_BUILD_OBJECT(
@@ -69,10 +79,11 @@ export class UsersRepository extends BaseRepository {
         ) as role_permissions
       FROM users u
       INNER JOIN roles r ON u.role_id = r.id
+      LEFT JOIN organizations o ON u.organization_id = o.id
       LEFT JOIN role_permissions rp ON r.id = rp.role_id
       LEFT JOIN permissions p ON rp.permission_id = p.id
       ${whereClause}
-      GROUP BY u.id, r.id
+      GROUP BY u.id, r.id, o.id
       ORDER BY u.created_at DESC
     `
 
@@ -95,6 +106,16 @@ export class UsersRepository extends BaseRepository {
         r.name as role_name,
         r.description as role_description,
         r.created_at as role_created_at,
+        o.id as organization_id,
+        o.type as organization_type,
+        o.legal_name as organization_legal_name,
+        o.trade_name as organization_trade_name,
+        o.tax_id as organization_tax_id,
+        o.phone as organization_phone,
+        o.email as organization_email,
+        o.website as organization_website,
+        o.active as organization_active,
+        o.created_at as organization_created_at,
         COALESCE(
           JSON_AGG(
             JSON_BUILD_OBJECT(
@@ -107,10 +128,11 @@ export class UsersRepository extends BaseRepository {
         ) as role_permissions
       FROM users u
       INNER JOIN roles r ON u.role_id = r.id
+      LEFT JOIN organizations o ON u.organization_id = o.id
       LEFT JOIN role_permissions rp ON r.id = rp.role_id
       LEFT JOIN permissions p ON rp.permission_id = p.id
       WHERE u.id = $1
-      GROUP BY u.id, r.id
+      GROUP BY u.id, r.id, o.id
     `
 
     const result = await this.executeQuery<any>(query, [id])
@@ -170,19 +192,20 @@ export class UsersRepository extends BaseRepository {
 
     if (fields.length === 0) return this.findById(id)
 
-    params.push(id, organizationId)
+    params.push(id)
 
     const query = `
       UPDATE users
-      SET ${fields.join(', ')}, updated_at = now()
-      WHERE id = $${paramIndex++} AND organization_id = $${paramIndex++}
+      SET ${fields.join(', ')}
+      WHERE id = $${paramIndex++}
       RETURNING *
     `
 
     const result = await this.executeQuery<UserSchema>(query, params)
     if (result.length === 0) return null
 
-    return result[0]
+    // Return enriched user with role, organization, and mapped fields
+    return this.findById(id)
   }
 
   async updateStatus(
@@ -193,15 +216,11 @@ export class UsersRepository extends BaseRepository {
     const query = `
       UPDATE users
       SET status = $1
-      WHERE id = $2 AND organization_id = $3
+      WHERE id = $2
       RETURNING *
     `
 
-    const result = await this.executeQuery<UserSchema>(query, [
-      status,
-      id,
-      organizationId,
-    ])
+    const result = await this.executeQuery<UserSchema>(query, [status, id])
     if (result.length === 0) return null
 
     return result[0]

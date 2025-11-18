@@ -110,6 +110,18 @@ export class OrganizationsService {
         }
       }
 
+      if (cleanData.phone) {
+        const existsByPhone =
+          await this.organizationRepository.checkExistsByPhone(cleanData.phone)
+        if (existsByPhone) {
+          throw new HttpError(
+            'Telefone já cadastrado',
+            409,
+            'ORGANIZATION_PHONE_EXISTS',
+          )
+        }
+      }
+
       const newOrganization = await this.organizationRepository.create(
         cleanData as Omit<OrganizationSchema, 'id' | 'createdAt' | 'createdBy'>,
         createdBy,
@@ -182,6 +194,18 @@ export class OrganizationsService {
             'Email já cadastrado',
             409,
             'ORGANIZATION_EMAIL_EXISTS',
+          )
+        }
+      }
+
+      if (cleanData.phone && cleanData.phone !== existingOrganization.phone) {
+        const existsByPhone =
+          await this.organizationRepository.checkExistsByPhone(cleanData.phone)
+        if (existsByPhone) {
+          throw new HttpError(
+            'Telefone já cadastrado',
+            409,
+            'ORGANIZATION_PHONE_EXISTS',
           )
         }
       }

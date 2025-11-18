@@ -24,6 +24,10 @@ import {
 import { ordersRoutes, ordersSwaggerPaths } from './orders.routes'
 import { categoriesRoutes, categoriesSwaggerPaths } from './categories.routes'
 import { cashbackRoutes, cashbackSwaggerPaths } from './cashback.routes'
+import {
+  changeRequestsRoutes,
+  changeRequestsSwaggerPaths,
+} from './change-requests.routes'
 
 export function registerRoutes(app: Express) {
   app.use(healthRoutes)
@@ -39,6 +43,7 @@ export function registerRoutes(app: Express) {
   app.use(ordersRoutes)
   app.use(categoriesRoutes)
   app.use(cashbackRoutes)
+  app.use(changeRequestsRoutes)
 }
 
 export const swaggerPaths = {
@@ -55,4 +60,5 @@ export const swaggerPaths = {
   orders: ordersSwaggerPaths,
   categories: categoriesSwaggerPaths,
   cashback: cashbackSwaggerPaths,
+  changeRequests: changeRequestsSwaggerPaths,
 }
