@@ -73,18 +73,20 @@ export class AuthRepository extends BaseRepository {
         createdAt: user.roleCreatedAt,
         permissions: user.rolePermissions || [],
       },
-      organization: user.organizationId ? {
-        id: user.organizationId,
-        type: user.organizationType,
-        legalName: user.organizationLegalName,
-        tradeName: user.organizationTradeName,
-        taxId: user.organizationTaxId,
-        phone: user.organizationPhone,
-        email: user.organizationEmail,
-        website: user.organizationWebsite,
-        active: user.organizationActive,
-        createdAt: user.organizationCreatedAt,
-      } : undefined,
+      organization: user.organizationId
+        ? {
+            id: user.organizationId,
+            type: user.organizationType,
+            legalName: user.organizationLegalName,
+            tradeName: user.organizationTradeName,
+            taxId: user.organizationTaxId,
+            phone: user.organizationPhone,
+            email: user.organizationEmail,
+            website: user.organizationWebsite,
+            active: user.organizationActive,
+            createdAt: user.organizationCreatedAt,
+          }
+        : undefined,
     }
   }
 
@@ -157,18 +159,20 @@ export class AuthRepository extends BaseRepository {
         createdAt: user.roleCreatedAt,
         permissions: user.rolePermissions || [],
       },
-      organization: user.organizationId ? {
-        id: user.organizationId,
-        type: user.organizationType,
-        legalName: user.organizationLegalName,
-        tradeName: user.organizationTradeName,
-        taxId: user.organizationTaxId,
-        phone: user.organizationPhone,
-        email: user.organizationEmail,
-        website: user.organizationWebsite,
-        active: user.organizationActive,
-        createdAt: user.organizationCreatedAt,
-      } : undefined,
+      organization: user.organizationId
+        ? {
+            id: user.organizationId,
+            type: user.organizationType,
+            legalName: user.organizationLegalName,
+            tradeName: user.organizationTradeName,
+            taxId: user.organizationTaxId,
+            phone: user.organizationPhone,
+            email: user.organizationEmail,
+            website: user.organizationWebsite,
+            active: user.organizationActive,
+            createdAt: user.organizationCreatedAt,
+          }
+        : undefined,
     }
   }
 

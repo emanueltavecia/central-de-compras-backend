@@ -102,20 +102,20 @@ export class ChangeRequestsController {
       500: ErrorResponseSchema,
     },
   })
-  async getById(
-    req: AuthenticatedRequest,
-    res: Response,
-  ) {
+  async getById(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
-      
+
       const changeRequest =
         await this.changeRequestsService.getChangeRequestById(id)
 
       return res
         .status(200)
         .json(
-          createSuccessResponse('Solicitação obtida com sucesso', changeRequest),
+          createSuccessResponse(
+            'Solicitação obtida com sucesso',
+            changeRequest,
+          ),
         )
     } catch (error: any) {
       return res
@@ -148,16 +148,20 @@ export class ChangeRequestsController {
     try {
       const currentUser = req.user!
 
-      const changeRequest = await this.changeRequestsService.createChangeRequest(
-        currentUser.id,
-        currentUser.organizationId,
-        data,
-      )
+      const changeRequest =
+        await this.changeRequestsService.createChangeRequest(
+          currentUser.id,
+          currentUser.organizationId,
+          data,
+        )
 
       return res
         .status(201)
         .json(
-          createSuccessResponse('Solicitação criada com sucesso', changeRequest),
+          createSuccessResponse(
+            'Solicitação criada com sucesso',
+            changeRequest,
+          ),
         )
     } catch (error: any) {
       return res
@@ -192,11 +196,12 @@ export class ChangeRequestsController {
       const { id } = req.params
       const currentUser = req.user!
 
-      const changeRequest = await this.changeRequestsService.reviewChangeRequest(
-        id,
-        currentUser.id,
-        data,
-      )
+      const changeRequest =
+        await this.changeRequestsService.reviewChangeRequest(
+          id,
+          currentUser.id,
+          data,
+        )
 
       return res
         .status(200)
@@ -224,20 +229,15 @@ export class ChangeRequestsController {
       500: ErrorResponseSchema,
     },
   })
-  async delete(
-    req: AuthenticatedRequest,
-    res: Response,
-  ) {
+  async delete(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
-      
+
       await this.changeRequestsService.deleteChangeRequest(id)
 
       return res
         .status(200)
-        .json(
-          createSuccessResponse('Solicitação deletada com sucesso', null),
-        )
+        .json(createSuccessResponse('Solicitação deletada com sucesso', null))
     } catch (error: any) {
       return res
         .status(error.statusCode || 500)

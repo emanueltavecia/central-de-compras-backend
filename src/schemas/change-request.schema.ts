@@ -1,4 +1,11 @@
-import { IsEnum, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID } from 'class-validator'
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator'
 import { ApiProperty } from '@/decorators'
 import { ChangeRequestStatus } from '@/enums'
 import { VALIDATION_MESSAGES } from '@/utils'

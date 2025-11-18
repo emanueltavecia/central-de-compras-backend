@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsStrongPassword,
   IsUUID,
   Validate,
   Matches,
@@ -45,7 +44,10 @@ export class UserSchema {
   })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
-  @Matches(/^[A-Za-z0-9]{6,}$/i, { message: 'A senha deve ter pelo menos 6 caracteres, contendo apenas letras e números.' })
+  @Matches(/^[A-Za-z0-9]{6,}$/i, {
+    message:
+      'A senha deve ter pelo menos 6 caracteres, contendo apenas letras e números.',
+  })
   password?: string
 
   @ApiProperty({

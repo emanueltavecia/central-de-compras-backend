@@ -327,5 +327,4 @@ export class UsersController {
         .json(createErrorResponse(error.message, error.errorCode))
     }
   }
-
 }

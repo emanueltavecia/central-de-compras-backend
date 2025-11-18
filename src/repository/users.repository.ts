@@ -220,10 +220,7 @@ export class UsersRepository extends BaseRepository {
       RETURNING *
     `
 
-    const result = await this.executeQuery<UserSchema>(query, [
-      status,
-      id,
-    ])
+    const result = await this.executeQuery<UserSchema>(query, [status, id])
     if (result.length === 0) return null
 
     return result[0]

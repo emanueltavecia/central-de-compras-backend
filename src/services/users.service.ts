@@ -38,8 +38,8 @@ export class UsersService {
         )
     }
 
-  const plainPassword = userData.password!
-  const hashedPassword = await bcrypt.hash(plainPassword, 12)
+    const plainPassword = userData.password!
+    const hashedPassword = await bcrypt.hash(plainPassword, 12)
 
     return this.repo.create(
       {
@@ -113,7 +113,7 @@ export class UsersService {
       dataToUpdate.roleId = await this.repo.getRoleIdByName(roleName)
     }
 
-  return this.repo.update(id, organizationId, dataToUpdate)
+    return this.repo.update(id, organizationId, dataToUpdate)
   }
 
   async updateStatus(
@@ -145,21 +145,21 @@ export class UsersService {
       )
     }
 
-      // Verificar se o usuário está inativo
-      const user = await this.repo.findById(id)
-      if (!user) {
-        throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
-      }
+    // Verificar se o usuário está inativo
+    const user = await this.repo.findById(id)
+    if (!user) {
+      throw new HttpError('Usuário não encontrado', 404, 'USER_NOT_FOUND')
+    }
 
-      if (user.status === UserAccountStatus.ACTIVE) {
-        throw new HttpError(
-          'Não é possível excluir um usuário ativo. Inative-o primeiro.',
-          400,
-          'CANNOT_DELETE_ACTIVE_USER',
-        )
-      }
+    if (user.status === UserAccountStatus.ACTIVE) {
+      throw new HttpError(
+        'Não é possível excluir um usuário ativo. Inative-o primeiro.',
+        400,
+        'CANNOT_DELETE_ACTIVE_USER',
+      )
+    }
 
-      return this.repo.delete(id)
+    return this.repo.delete(id)
   }
 
   async getUserPermissions(id: string, organizationId: string) {

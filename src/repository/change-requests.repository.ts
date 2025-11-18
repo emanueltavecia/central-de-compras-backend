@@ -53,7 +53,7 @@ export class ChangeRequestsRepository extends BaseRepository {
     `
 
     const result = await this.executeQuery<any>(query, params)
-    
+
     return result.map((row) => ({
       id: row.id,
       userId: row.userId,

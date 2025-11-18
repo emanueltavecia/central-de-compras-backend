@@ -1,4 +1,8 @@
-import { ChangeRequestsRepository, OrganizationsRepository, UsersRepository } from '@/repository'
+import {
+  ChangeRequestsRepository,
+  OrganizationsRepository,
+  UsersRepository,
+} from '@/repository'
 import {
   ChangeRequestSchema,
   CreateChangeRequestSchema,
@@ -103,11 +107,7 @@ export class ChangeRequestsService {
     )
 
     if (!reviewed) {
-      throw new HttpError(
-        'Erro ao revisar solicitação',
-        500,
-        'REVIEW_FAILED',
-      )
+      throw new HttpError('Erro ao revisar solicitação', 500, 'REVIEW_FAILED')
     }
 
     return reviewed
