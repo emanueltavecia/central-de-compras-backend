@@ -45,8 +45,7 @@ export class UsersRepository extends BaseRepository {
     const query = `
       SELECT 
         u.id,
-  u.email,
-  u.password_plain as "passwordPlain",
+        u.email,
         u.full_name,
         u.phone,
         u.role_id,
@@ -95,8 +94,7 @@ export class UsersRepository extends BaseRepository {
     const query = `
       SELECT 
         u.id,
-  u.email,
-  u.password_plain as "passwordPlain",
+        u.email,
         u.full_name,
         u.phone,
         u.role_id,
@@ -146,18 +144,16 @@ export class UsersRepository extends BaseRepository {
   async create(
     userData: Partial<UserSchema>,
     createdBy: string,
-    passwordPlain?: string,
   ): Promise<UserSchema> {
     const query = `
-      INSERT INTO users (email, password, password_plain, full_name, phone, role_id, organization_id, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO users (email, password, full_name, phone, role_id, organization_id, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `
 
     const result = await this.executeQuery<UserSchema>(query, [
       userData.email,
       userData.password,
-      passwordPlain || null,
       userData.fullName || null,
       userData.phone || null,
       userData.roleId,
@@ -172,7 +168,6 @@ export class UsersRepository extends BaseRepository {
     id: string,
     organizationId: string,
     userData: Partial<UserSchema>,
-    passwordPlain?: string,
   ): Promise<UserSchema | null> {
     const fields: string[] = []
     const params: any[] = []
@@ -193,8 +188,6 @@ export class UsersRepository extends BaseRepository {
     if (userData.password) {
       fields.push(`password = $${paramIndex++}`)
       params.push(userData.password)
-      fields.push(`password_plain = $${paramIndex++}`)
-      params.push(passwordPlain || null)
     }
 
     if (fields.length === 0) return this.findById(id)

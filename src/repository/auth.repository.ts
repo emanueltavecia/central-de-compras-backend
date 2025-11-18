@@ -8,7 +8,6 @@ export class AuthRepository extends BaseRepository {
         u.id as "id",
         u.email as "email",
         u.password as "password",
-        u.password_plain as "passwordPlain",
         u.full_name as "fullName",
         u.phone as "phone",
         u.role_id as "roleId",
@@ -60,7 +59,6 @@ export class AuthRepository extends BaseRepository {
       id: user.id,
       email: user.email,
       password: user.password,
-      passwordPlain: user.passwordPlain,
       fullName: user.fullName,
       phone: user.phone,
       roleId: user.roleId,
@@ -95,7 +93,6 @@ export class AuthRepository extends BaseRepository {
       SELECT 
         u.id as "id",
         u.email as "email",
-        u.password_plain as "passwordPlain",
         u.full_name as "fullName",
         u.phone as "phone",
         u.role_id as "roleId",
@@ -146,7 +143,6 @@ export class AuthRepository extends BaseRepository {
     return {
       id: user.id,
       email: user.email,
-      passwordPlain: user.passwordPlain,
       fullName: user.fullName,
       phone: user.phone,
       roleId: user.roleId,

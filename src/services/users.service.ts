@@ -49,7 +49,6 @@ export class UsersService {
         status: UserAccountStatus.ACTIVE,
       },
       currentUserId,
-      plainPassword,
     )
   }
 
@@ -83,9 +82,7 @@ export class UsersService {
     }
 
     const dataToUpdate: Partial<UserSchema> = { ...userData }
-    let passwordPlainParam: string | undefined
     if (userData.password) {
-      passwordPlainParam = userData.password
       dataToUpdate.password = await bcrypt.hash(userData.password, 12)
     }
     if (userData.organizationId) {
@@ -116,7 +113,7 @@ export class UsersService {
       dataToUpdate.roleId = await this.repo.getRoleIdByName(roleName)
     }
 
-  return this.repo.update(id, organizationId, dataToUpdate, passwordPlainParam)
+  return this.repo.update(id, organizationId, dataToUpdate)
   }
 
   async updateStatus(
