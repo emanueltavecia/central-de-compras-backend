@@ -147,10 +147,7 @@ export class OrdersService {
 
       let storeState: string | undefined
       if (storeOrganization.address && storeOrganization.address.length > 0) {
-        const primaryAddress = storeOrganization.address.find(
-          (addr) => addr.isPrimary,
-        )
-        storeState = primaryAddress?.state || storeOrganization.address[0].state
+        storeState = storeOrganization.address[0].state
       }
 
       const cashbackUsed = order.cashbackUsed || 0

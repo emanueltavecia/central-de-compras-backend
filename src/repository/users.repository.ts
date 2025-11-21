@@ -88,11 +88,7 @@ export class UsersRepository extends BaseRepository {
       ORDER BY u.created_at DESC
     `
 
-    const users = await this.executeQuery<any>(query, params)
-    return users.map((user: any) => ({
-      ...user,
-      profileImageUrl: user.profile_image_url,
-    }))
+    return this.executeQuery<UserSchema>(query, params)
   }
 
   async findById(id: string): Promise<UserSchema | null> {
@@ -144,11 +140,7 @@ export class UsersRepository extends BaseRepository {
     const result = await this.executeQuery<any>(query, [id])
     if (result.length === 0) return null
 
-    const user = result[0]
-    return {
-      ...user,
-      profileImageUrl: user.profile_image_url,
-    }
+    return result[0]
   }
 
   async create(
@@ -161,7 +153,7 @@ export class UsersRepository extends BaseRepository {
       RETURNING *
     `
 
-    const result = await this.executeQuery<any>(query, [
+    const result = await this.executeQuery<UserSchema>(query, [
       userData.email,
       userData.password,
       userData.fullName || null,
@@ -171,11 +163,7 @@ export class UsersRepository extends BaseRepository {
       createdBy,
     ])
 
-    const user = result[0]
-    return {
-      ...user,
-      profileImageUrl: user.profile_image_url,
-    }
+    return result[0] || null
   }
 
   async update(
@@ -238,14 +226,17 @@ export class UsersRepository extends BaseRepository {
       RETURNING *
     `
 
-    const result = await this.executeQuery<any>(query, [status, id])
+    const result = await this.executeQuery<UserSchema>(query, [status, id])
     if (result.length === 0) return null
 
     return this.findById(id)
   }
 
-  async updateProfileImage(id: string, url: string | null): Promise<UserSchema | null> {
-    const query = `UPDATE users SET profile_image_url = $1 WHERE id = $2 RETURNING id`;
+  async updateProfileImage(
+    id: string,
+    url: string | null,
+  ): Promise<UserSchema | null> {
+    const query = `UPDATE users SET profile_image_url = $1 WHERE id = $2 RETURNING id`
     const result = await this.executeQuery<any>(query, [url || null, id])
     if (result.length === 0) return null
     return this.findById(id)

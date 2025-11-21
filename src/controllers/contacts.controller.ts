@@ -4,7 +4,6 @@ import { ContactsService } from '@/services'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
 import {
   ContactSchema,
-    ContactUpdateSchema,
   ErrorResponseSchema,
   SuccessResponseSchema,
   IdParamSchema,
@@ -121,7 +120,7 @@ export class ContactsController {
     path: '/:id',
     summary: 'Atualizar um contato existente',
     params: IdParamSchema,
-    body: ContactUpdateSchema,
+    body: ContactSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: ContactSchema,
@@ -134,7 +133,7 @@ export class ContactsController {
     },
   })
   async updateContact(
-    contactData: Partial<ContactUpdateSchema>,
+    contactData: Partial<ContactSchema>,
     req: Request,
     res: Response,
   ) {
