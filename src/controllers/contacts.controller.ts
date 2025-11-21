@@ -197,7 +197,7 @@ export class ContactsController {
       500: ErrorResponseSchema,
     },
   })
-  async setPrimaryContact(req: Request, res: Response) {
+  async setPrimaryContact(_data: any, req: Request, res: Response) {
     try {
       const { id } = req.params
       const updatedContact = await this.contactsService.setPrimaryContact(id)
@@ -207,6 +207,42 @@ export class ContactsController {
         .json(
           createSuccessResponse(
             'Contato definido como primário com sucesso',
+            updatedContact,
+          ),
+        )
+    } catch (error: any) {
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
+    }
+  }
+
+  @ApiRoute({
+    method: 'patch',
+    path: '/:id/unset-primary',
+    summary: 'Remover definição de contato primário',
+    params: IdParamSchema,
+    responses: {
+      200: SuccessResponseSchema.create({
+        schema: ContactSchema,
+        dataDescription: 'Contato atualizado',
+        message: 'Contato deixou de ser primário com sucesso',
+      }),
+      400: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema,
+    },
+  })
+  async unsetPrimaryContact(_data: any, req: Request, res: Response) {
+    try {
+      const { id } = req.params
+      const updatedContact = await this.contactsService.unsetPrimaryContact(id)
+
+      return res
+        .status(200)
+        .json(
+          createSuccessResponse(
+            'Contato deixou de ser primário com sucesso',
             updatedContact,
           ),
         )

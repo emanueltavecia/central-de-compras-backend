@@ -146,4 +146,26 @@ export class ContactsService {
       )
     }
   }
+
+  async unsetPrimaryContact(id: string): Promise<ContactSchema> {
+    try {
+      const updatedContact = await this.contactRepository.unsetPrimaryContact(id)
+
+      if (!updatedContact) {
+        throw new HttpError('Contato não encontrado', 404, 'CONTACT_NOT_FOUND')
+      }
+
+      return updatedContact
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error
+      }
+      console.error('Error unsetting primary contact:', error)
+      throw new HttpError(
+        'Erro ao remover contato primário',
+        500,
+        'CONTACT_UNSET_PRIMARY_ERROR',
+      )
+    }
+  }
 }

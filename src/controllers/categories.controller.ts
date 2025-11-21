@@ -9,6 +9,7 @@ import {
   IdParamSchema,
 } from '@/schemas'
 import { CategoriesService } from '@/services/categories.service'
+import { AuthenticatedRequest } from '@/middlewares'
 
 @ApiController('/categories', ['Categories'])
 export class CategoriesController {
@@ -35,14 +36,21 @@ export class CategoriesController {
   })
   async createCategory(
     categoryData: CategorySchema,
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
   ) {
     try {
-      const { id: _id, createdAt: _createdAt, ...dataToCreate } = categoryData
-      const createdCategory = await this.categoriesService.createCategory(
-        dataToCreate as Omit<CategorySchema, 'id' | 'createdAt'>,
-      )
+      const user = req.user!
+      const {
+        id: _id,
+        createdAt: _createdAt,
+        supplierOrgId: _supplierOrgId,
+        ...dataToCreate
+      } = categoryData
+      const createdCategory = await this.categoriesService.createCategory({
+        ...dataToCreate,
+        supplierOrgId: user.organizationId,
+      } as Omit<CategorySchema, 'id' | 'createdAt'>)
 
       return res
         .status(201)

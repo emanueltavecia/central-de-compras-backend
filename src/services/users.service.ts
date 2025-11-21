@@ -165,4 +165,8 @@ export class UsersService {
   async getUserPermissions(id: string, organizationId: string) {
     return this.repo.getUserPermissions(id, organizationId)
   }
+
+  async updateProfileImage(id: string, relativePath: string | null) {
+    return this.repo.updateProfileImage(id, relativePath)
+  }
 }

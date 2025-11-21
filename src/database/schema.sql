@@ -56,6 +56,7 @@ CREATE TABLE users (
   organization_id UUID NOT NULL, -- FK adicionada depois
   status user_account_status DEFAULT 'active',
   created_by UUID, -- FK adicionada depois
+  profile_image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
@@ -102,6 +103,7 @@ CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   parent_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  supplier_org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -264,6 +266,7 @@ ALTER TABLE order_status_history
 -- INDEXES
 CREATE INDEX idx_addresses_org ON addresses(organization_id);
 CREATE INDEX idx_addresses_state ON addresses(state);
+CREATE INDEX idx_categories_supplier ON categories(supplier_org_id);
 CREATE INDEX idx_products_supplier ON products(supplier_org_id);
 CREATE INDEX idx_payment_conditions_supplier ON payment_conditions(supplier_org_id);
 CREATE INDEX idx_supplier_state_conditions_supplier_state ON supplier_state_conditions(supplier_org_id, state);

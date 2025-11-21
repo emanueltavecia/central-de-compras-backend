@@ -1,5 +1,4 @@
 import {
-  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -101,16 +100,6 @@ export class AddressSchema {
   @IsString({ message: VALIDATION_MESSAGES.INVALID_STRING })
   @Validate(IsPostalCodeValidator)
   postalCode: string
-
-  @ApiProperty({
-    description: 'Se é o endereço principal',
-    example: true,
-    type: 'boolean',
-    required: false,
-  })
-  @IsOptional()
-  @IsBoolean({ message: VALIDATION_MESSAGES.INVALID_BOOLEAN })
-  isPrimary?: boolean
 
   @ApiProperty({
     description: 'Data de criação do endereço',

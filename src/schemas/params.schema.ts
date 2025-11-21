@@ -32,3 +32,31 @@ export class NumericIdParamSchema {
   @IsNumberString({}, { message: VALIDATION_MESSAGES.INVALID_NUMBER })
   id!: string
 }
+
+export class OrganizationIdParamSchema {
+  @ApiProperty({
+    description: 'ID único da organização',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  organizationId!: string
+}
+
+export class OrganizationAddressParamSchema {
+  @ApiProperty({
+    description: 'ID único da organização',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  organizationId!: string
+
+  @ApiProperty({
+    description: 'ID único do endereço',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    format: 'uuid',
+  })
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  addressId!: string
+}

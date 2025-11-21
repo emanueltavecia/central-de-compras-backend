@@ -6,7 +6,8 @@ import {
   AddressSchema,
   ErrorResponseSchema,
   SuccessResponseSchema,
-  IdParamSchema,
+  OrganizationIdParamSchema,
+  OrganizationAddressParamSchema,
 } from '@/schemas'
 import { OrganizationsService, AddressService } from '@/services'
 import { createErrorResponse, createSuccessResponse } from '@/utils'
@@ -22,7 +23,7 @@ export class OrganizationAddressesController {
     method: 'get',
     path: '/',
     summary: 'Listar endereços de uma organização',
-    params: IdParamSchema,
+    params: OrganizationIdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: AddressSchema,
@@ -60,7 +61,7 @@ export class OrganizationAddressesController {
     path: '/',
     summary: 'Criar novo endereço para uma organização',
     permissions: [PermissionName.MANAGE_ORGANIZATIONS],
-    params: IdParamSchema,
+    params: OrganizationIdParamSchema,
     body: AddressSchema,
     responses: {
       201: SuccessResponseSchema.create({
@@ -108,7 +109,7 @@ export class OrganizationAddressesController {
     path: '/:addressId',
     summary: 'Atualizar endereço de uma organização',
     permissions: [PermissionName.MANAGE_ORGANIZATIONS],
-    params: IdParamSchema,
+    params: OrganizationAddressParamSchema,
     body: AddressSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -154,7 +155,7 @@ export class OrganizationAddressesController {
     path: '/:addressId',
     summary: 'Deletar endereço de uma organização',
     permissions: [PermissionName.MANAGE_ORGANIZATIONS],
-    params: IdParamSchema,
+    params: OrganizationAddressParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
         schema: AddressSchema,
@@ -178,49 +179,6 @@ export class OrganizationAddressesController {
       return res
         .status(200)
         .json(createSuccessResponse('Endereço deletado com sucesso', null))
-    } catch (error: any) {
-      return res
-        .status(error.statusCode || 500)
-        .json(createErrorResponse(error.message, error.errorCode))
-    }
-  }
-
-  @ApiRoute({
-    method: 'patch',
-    path: '/:addressId/primary',
-    summary: 'Definir endereço como primário',
-    permissions: [PermissionName.MANAGE_ORGANIZATIONS],
-    params: IdParamSchema,
-    responses: {
-      200: SuccessResponseSchema.create({
-        schema: AddressSchema,
-        dataDescription: 'Dados do endereço definido como primário',
-        message: 'Endereço definido como primário com sucesso',
-      }),
-      400: ErrorResponseSchema,
-      401: ErrorResponseSchema,
-      403: ErrorResponseSchema,
-      404: ErrorResponseSchema,
-      500: ErrorResponseSchema,
-    },
-  })
-  async setPrimaryAddress(req: Request, res: Response) {
-    try {
-      const { organizationId, addressId } = req.params
-
-      await this.organizationsService.getOrganizationById(organizationId, false)
-
-      const updatedAddress =
-        await this.addressService.setPrimaryAddress(addressId)
-
-      return res
-        .status(200)
-        .json(
-          createSuccessResponse(
-            'Endereço definido como primário com sucesso',
-            updatedAddress,
-          ),
-        )
     } catch (error: any) {
       return res
         .status(error.statusCode || 500)
