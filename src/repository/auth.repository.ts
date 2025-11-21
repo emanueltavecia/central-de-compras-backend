@@ -30,23 +30,41 @@ export class AuthRepository extends BaseRepository {
         o.website as "organizationWebsite",
         o.active as "organizationActive",
         o.created_at as "organizationCreatedAt",
-        COALESCE(
-          JSON_AGG(
+        (
+          SELECT COALESCE(JSON_AGG(
             JSON_BUILD_OBJECT(
               'id', p.id,
               'name', p.name,
               'description', p.description
             )
-          ) FILTER (WHERE p.id IS NOT NULL),
-          '[]'::json
-        ) as "rolePermissions"
+          ), '[]'::json)
+          FROM permissions p
+          INNER JOIN role_permissions rp ON p.id = rp.permission_id
+          WHERE rp.role_id = r.id
+        ) as "rolePermissions",
+        (
+          SELECT COALESCE(JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', a.id,
+              'organizationId', a.organization_id,
+              'street', a.street,
+              'number', a.number,
+              'complement', a.complement,
+              'neighborhood', a.neighborhood,
+              'city', a.city,
+              'state', a.state,
+              'postalCode', a.postal_code,
+              'isPrimary', a.is_primary,
+              'createdAt', a.created_at
+            )
+          ), '[]'::json)
+          FROM addresses a
+          WHERE a.organization_id = o.id
+        ) as "organizationAddresses"
       FROM users u
       INNER JOIN roles r ON u.role_id = r.id
       LEFT JOIN organizations o ON u.organization_id = o.id
-      LEFT JOIN role_permissions rp ON r.id = rp.role_id
-      LEFT JOIN permissions p ON rp.permission_id = p.id
       WHERE u.email = $1
-      GROUP BY u.id, r.id, o.id
     `
 
     const result = await this.executeQuery<any>(query, [email])
@@ -67,7 +85,7 @@ export class AuthRepository extends BaseRepository {
       status: user.status,
       createdBy: user.createdBy,
       createdAt: user.createdAt,
-        profileImageUrl: user.profileImageUrl || undefined,
+      profileImageUrl: user.profileImageUrl || undefined,
       role: {
         id: user.roleId,
         name: user.roleName,
@@ -87,6 +105,7 @@ export class AuthRepository extends BaseRepository {
             website: user.organizationWebsite,
             active: user.organizationActive,
             createdAt: user.organizationCreatedAt,
+            address: user.organizationAddresses || [],
           }
         : undefined,
     }
@@ -119,23 +138,41 @@ export class AuthRepository extends BaseRepository {
         o.website as "organizationWebsite",
         o.active as "organizationActive",
         o.created_at as "organizationCreatedAt",
-        COALESCE(
-          JSON_AGG(
+        (
+          SELECT COALESCE(JSON_AGG(
             JSON_BUILD_OBJECT(
               'id', p.id,
               'name', p.name,
               'description', p.description
             )
-          ) FILTER (WHERE p.id IS NOT NULL),
-          '[]'::json
-        ) as "rolePermissions"
+          ), '[]'::json)
+          FROM permissions p
+          INNER JOIN role_permissions rp ON p.id = rp.permission_id
+          WHERE rp.role_id = r.id
+        ) as "rolePermissions",
+        (
+          SELECT COALESCE(JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', a.id,
+              'organizationId', a.organization_id,
+              'street', a.street,
+              'number', a.number,
+              'complement', a.complement,
+              'neighborhood', a.neighborhood,
+              'city', a.city,
+              'state', a.state,
+              'postalCode', a.postal_code,
+              'isPrimary', a.is_primary,
+              'createdAt', a.created_at
+            )
+          ), '[]'::json)
+          FROM addresses a
+          WHERE a.organization_id = o.id
+        ) as "organizationAddresses"
       FROM users u
       INNER JOIN roles r ON u.role_id = r.id
       LEFT JOIN organizations o ON u.organization_id = o.id
-      LEFT JOIN role_permissions rp ON r.id = rp.role_id
-      LEFT JOIN permissions p ON rp.permission_id = p.id
       WHERE u.id = $1
-      GROUP BY u.id, r.id, o.id
     `
 
     const result = await this.executeQuery<any>(query, [id])
@@ -155,7 +192,7 @@ export class AuthRepository extends BaseRepository {
       status: user.status,
       createdBy: user.createdBy,
       createdAt: user.createdAt,
-        profileImageUrl: user.profileImageUrl || undefined,
+      profileImageUrl: user.profileImageUrl || undefined,
       role: {
         id: user.roleId,
         name: user.roleName,
@@ -175,6 +212,7 @@ export class AuthRepository extends BaseRepository {
             website: user.organizationWebsite,
             active: user.organizationActive,
             createdAt: user.organizationCreatedAt,
+            address: user.organizationAddresses || [],
           }
         : undefined,
     }
