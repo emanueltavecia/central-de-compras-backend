@@ -12,13 +12,14 @@ export class CategoryRepository extends BaseRepository {
   ): Promise<CategorySchema> {
     const query = `
             INSERT INTO categories (
-                name, parent_id, description
-            ) VALUES ($1, $2, $3)
+                name, parent_id, supplier_org_id, description
+            ) VALUES ($1, $2, $3, $4)
             RETURNING *
         `
     const params = [
       category.name,
       category.parentId || null,
+      category.supplierOrgId,
       category.description || null,
     ]
     const result = await this.executeQuery<CategorySchema>(query, params)
@@ -35,6 +36,12 @@ export class CategoryRepository extends BaseRepository {
     if (filters.parentId) {
       conditions.push(`parent_id = $${paramIndex}`)
       params.push(filters.parentId)
+      paramIndex++
+    }
+
+    if (filters.supplierOrgId) {
+      conditions.push(`supplier_org_id = $${paramIndex}`)
+      params.push(filters.supplierOrgId)
       paramIndex++
     }
 

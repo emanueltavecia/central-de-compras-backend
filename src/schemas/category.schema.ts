@@ -34,6 +34,16 @@ export class CategorySchema {
   parentId?: string
 
   @ApiProperty({
+    description: 'ID da organização fornecedora',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    format: 'uuid',
+    required: true,
+    readOnly: true,
+  })
+  supplierOrgId: string
+
+  @ApiProperty({
     description: 'Descrição da categoria',
     example: 'Produtos eletrônicos diversos',
     type: 'string',
@@ -64,4 +74,14 @@ export class CategoryFiltersSchema {
   @IsOptional()
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   parentId?: string
+
+  @ApiProperty({
+    description: 'ID da organização fornecedora para filtrar categorias',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    type: 'string',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
+  supplierOrgId?: string
 }
