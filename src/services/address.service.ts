@@ -101,6 +101,26 @@ export class AddressService {
     try {
       const cleanData = this.removeReadOnlyFields(addressData as AddressSchema)
 
+      if (addressData.street !== undefined && typeof addressData.street !== 'string') {
+        throw new HttpError('street deve ser uma string', 400, 'INVALID_STREET')
+      }
+
+      if (addressData.neighborhood !== undefined && typeof addressData.neighborhood !== 'string') {
+        throw new HttpError('neighborhood deve ser uma string', 400, 'INVALID_NEIGHBORHOOD')
+      }
+
+      if (addressData.city !== undefined && typeof addressData.city !== 'string') {
+        throw new HttpError('city deve ser uma string', 400, 'INVALID_CITY')
+      }
+
+      if (addressData.state !== undefined && typeof addressData.state !== 'string') {
+        throw new HttpError('state deve ser uma string', 400, 'INVALID_STATE')
+      }
+
+      if (addressData.postalCode !== undefined && typeof addressData.postalCode !== 'string') {
+        throw new HttpError('postalCode deve ser uma string', 400, 'INVALID_POSTAL_CODE')
+      }
+
       const updatedAddress = await this.addressRepository.update(id, cleanData)
 
       if (!updatedAddress) {
@@ -136,28 +156,6 @@ export class AddressService {
         'Erro ao deletar endereço',
         500,
         'ADDRESS_DELETE_ERROR',
-      )
-    }
-  }
-
-  async setPrimaryAddress(id: string): Promise<AddressSchema> {
-    try {
-      const updatedAddress = await this.addressRepository.setPrimaryAddress(id)
-
-      if (!updatedAddress) {
-        throw new HttpError('Endereço não encontrado', 404, 'ADDRESS_NOT_FOUND')
-      }
-
-      return updatedAddress
-    } catch (error) {
-      if (error instanceof HttpError) {
-        throw error
-      }
-      console.error('Error setting primary address:', error)
-      throw new HttpError(
-        'Erro ao definir endereço primário',
-        500,
-        'ADDRESS_SET_PRIMARY_ERROR',
       )
     }
   }

@@ -56,6 +56,7 @@ CREATE TABLE users (
   organization_id UUID NOT NULL, -- FK adicionada depois
   status user_account_status DEFAULT 'active',
   created_by UUID, -- FK adicionada depois
+  profile_image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 

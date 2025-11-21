@@ -15,6 +15,7 @@ export class AuthRepository extends BaseRepository {
         u.status as "status",
         u.created_by as "createdBy",
         u.created_at as "createdAt",
+        u.profile_image_url as "profileImageUrl",
         r.id as "roleId",
         r.name as "roleName",
         r.description as "roleDescription",
@@ -66,6 +67,7 @@ export class AuthRepository extends BaseRepository {
       status: user.status,
       createdBy: user.createdBy,
       createdAt: user.createdAt,
+        profileImageUrl: user.profileImageUrl || undefined,
       role: {
         id: user.roleId,
         name: user.roleName,
@@ -102,6 +104,7 @@ export class AuthRepository extends BaseRepository {
         u.status as "status",
         u.created_by as "createdBy",
         u.created_at as "createdAt",
+        u.profile_image_url as "profileImageUrl",
         r.id as "roleId",
         r.name as "roleName",
         r.description as "roleDescription",
@@ -152,6 +155,7 @@ export class AuthRepository extends BaseRepository {
       status: user.status,
       createdBy: user.createdBy,
       createdAt: user.createdAt,
+        profileImageUrl: user.profileImageUrl || undefined,
       role: {
         id: user.roleId,
         name: user.roleName,

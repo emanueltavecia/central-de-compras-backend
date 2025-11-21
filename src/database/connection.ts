@@ -68,6 +68,7 @@ class Database {
     try {
       const result = await this.query('SELECT NOW()')
       console.log('Database connection successful:', result.rows[0])
+      await this.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image_url TEXT')
       return true
     } catch (error) {
       console.error('Database connection failed:', error)

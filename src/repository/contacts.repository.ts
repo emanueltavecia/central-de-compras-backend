@@ -12,10 +12,13 @@ export class ContactRepository extends BaseRepository {
   ): Promise<ContactSchema> {
     return this.executeTransaction(async (client: PoolClient) => {
       if (contact.isPrimary) {
-        await client.query(
-          'UPDATE contacts SET is_primary = false WHERE organization_id = $1',
+        const existingPrimary = await client.query(
+          'SELECT id FROM contacts WHERE organization_id = $1 AND is_primary = true',
           [contact.organizationId],
         )
+        if (existingPrimary.rows.length > 0) {
+          throw new Error('Já existe um contato principal para esta organização')
+        }
       }
 
       const query = `
@@ -67,11 +70,28 @@ export class ContactRepository extends BaseRepository {
     contact: Partial<Omit<ContactSchema, 'id' | 'createdAt'>>,
   ): Promise<ContactSchema | null> {
     return this.executeTransaction(async (client: PoolClient) => {
+      const currentContactResult = await client.query(
+        'SELECT organization_id FROM contacts WHERE id = $1',
+        [id],
+      )
+
+      if (currentContactResult.rows.length === 0) {
+        return null
+      }
+
+      const organizationId = currentContactResult.rows[0].organization_id
+
       if (contact.isPrimary) {
-        await client.query(
-          'UPDATE contacts SET is_primary = false WHERE organization_id = $1',
-          [contact.organizationId],
+        const existingPrimary = await client.query(
+          'SELECT id FROM contacts WHERE organization_id = $1 AND is_primary = true',
+          [organizationId],
         )
+        if (
+          existingPrimary.rows.length > 0 &&
+          existingPrimary.rows[0].id !== id
+        ) {
+          throw new Error('Já existe um contato principal para esta organização')
+        }
       }
 
       const fields: string[] = []
@@ -119,13 +139,40 @@ export class ContactRepository extends BaseRepository {
 
       const contact = contactResult.rows[0]
 
-      await client.query(
-        'UPDATE contacts SET is_primary = false WHERE organization_id = $1',
+      const existingPrimary = await client.query(
+        'SELECT id FROM contacts WHERE organization_id = $1 AND is_primary = true',
         [contact.organization_id],
       )
 
+      if (
+        existingPrimary.rows.length > 0 &&
+        existingPrimary.rows[0].id !== id
+      ) {
+        throw new Error('Já existe um contato principal para esta organização')
+      }
+
       const result = await client.query(
         'UPDATE contacts SET is_primary = true WHERE id = $1 RETURNING *',
+        [id],
+      )
+
+      return result.rows[0] || null
+    })
+  }
+
+  async unsetPrimaryContact(id: string): Promise<ContactSchema | null> {
+    return this.executeTransaction(async (client: PoolClient) => {
+      const contactResult = await client.query(
+        'SELECT * FROM contacts WHERE id = $1',
+        [id],
+      )
+
+      if (contactResult.rows.length === 0) {
+        return null
+      }
+
+      const result = await client.query(
+        'UPDATE contacts SET is_primary = false WHERE id = $1 RETURNING *',
         [id],
       )
 

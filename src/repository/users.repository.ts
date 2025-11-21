@@ -53,6 +53,7 @@ export class UsersRepository extends BaseRepository {
         u.status,
         u.created_by,
         u.created_at,
+        u.profile_image_url,
         r.id as role_id,
         r.name as role_name,
         r.description as role_description,
@@ -87,7 +88,11 @@ export class UsersRepository extends BaseRepository {
       ORDER BY u.created_at DESC
     `
 
-    return this.executeQuery<UserSchema>(query, params)
+    const users = await this.executeQuery<any>(query, params)
+    return users.map((user: any) => ({
+      ...user,
+      profileImageUrl: user.profile_image_url,
+    }))
   }
 
   async findById(id: string): Promise<UserSchema | null> {
@@ -102,6 +107,7 @@ export class UsersRepository extends BaseRepository {
         u.status,
         u.created_by,
         u.created_at,
+        u.profile_image_url,
         r.id as role_id,
         r.name as role_name,
         r.description as role_description,
@@ -138,7 +144,11 @@ export class UsersRepository extends BaseRepository {
     const result = await this.executeQuery<any>(query, [id])
     if (result.length === 0) return null
 
-    return result[0]
+    const user = result[0]
+    return {
+      ...user,
+      profileImageUrl: user.profile_image_url,
+    }
   }
 
   async create(
@@ -151,7 +161,7 @@ export class UsersRepository extends BaseRepository {
       RETURNING *
     `
 
-    const result = await this.executeQuery<UserSchema>(query, [
+    const result = await this.executeQuery<any>(query, [
       userData.email,
       userData.password,
       userData.fullName || null,
@@ -161,7 +171,11 @@ export class UsersRepository extends BaseRepository {
       createdBy,
     ])
 
-    return result[0]
+    const user = result[0]
+    return {
+      ...user,
+      profileImageUrl: user.profile_image_url,
+    }
   }
 
   async update(
@@ -188,6 +202,10 @@ export class UsersRepository extends BaseRepository {
     if (userData.password) {
       fields.push(`password = $${paramIndex++}`)
       params.push(userData.password)
+    }
+    if (userData.profileImageUrl) {
+      fields.push(`profile_image_url = $${paramIndex++}`)
+      params.push(userData.profileImageUrl)
     }
 
     if (fields.length === 0) return this.findById(id)
@@ -220,10 +238,17 @@ export class UsersRepository extends BaseRepository {
       RETURNING *
     `
 
-    const result = await this.executeQuery<UserSchema>(query, [status, id])
+    const result = await this.executeQuery<any>(query, [status, id])
     if (result.length === 0) return null
 
-    return result[0]
+    return this.findById(id)
+  }
+
+  async updateProfileImage(id: string, url: string | null): Promise<UserSchema | null> {
+    const query = `UPDATE users SET profile_image_url = $1 WHERE id = $2 RETURNING id`;
+    const result = await this.executeQuery<any>(query, [url || null, id])
+    if (result.length === 0) return null
+    return this.findById(id)
   }
 
   async hasRelatedRecords(userId: string): Promise<boolean> {

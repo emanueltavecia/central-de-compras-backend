@@ -10,6 +10,7 @@ import {
   PermissionSchema,
   UpdateUserStatusSchema,
   IdParamSchema,
+  UpdateUserSchema,
 } from '@/schemas'
 import { UsersService } from '@/services'
 
@@ -136,7 +137,7 @@ export class UsersController {
     path: '/:id',
     summary: 'Atualizar dados do usuário',
     permissions: [PermissionName.MANAGE_USERS],
-    body: UserSchema,
+      body: UpdateUserSchema,
     params: IdParamSchema,
     responses: {
       200: SuccessResponseSchema.create({
@@ -152,7 +153,7 @@ export class UsersController {
     },
   })
   async updateUser(
-    userData: UserSchema,
+      userData: UpdateUserSchema,
     req: AuthenticatedRequest,
     res: Response,
   ) {
