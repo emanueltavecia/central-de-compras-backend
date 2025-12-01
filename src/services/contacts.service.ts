@@ -149,7 +149,8 @@ export class ContactsService {
 
   async unsetPrimaryContact(id: string): Promise<ContactSchema> {
     try {
-      const updatedContact = await this.contactRepository.unsetPrimaryContact(id)
+      const updatedContact =
+        await this.contactRepository.unsetPrimaryContact(id)
 
       if (!updatedContact) {
         throw new HttpError('Contato não encontrado', 404, 'CONTACT_NOT_FOUND')
