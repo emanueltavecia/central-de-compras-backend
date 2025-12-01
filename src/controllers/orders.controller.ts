@@ -12,6 +12,7 @@ import {
   ErrorResponseSchema,
   SuccessResponseSchema,
   IdParamSchema,
+  UpdateOrderStatusSchema,
 } from '@/schemas'
 
 @ApiController('/orders', ['Orders'])
@@ -164,6 +165,68 @@ export class OrdersController {
           createSuccessResponse(
             'Valores calculados com sucesso',
             calculatedValues,
+          ),
+        )
+    } catch (error: any) {
+      return res
+        .status(error.statusCode || 500)
+        .json(createErrorResponse(error.message, error.errorCode))
+    }
+  }
+
+  @ApiRoute({
+    method: 'patch',
+    path: '/:id/status',
+    summary: 'Alterar status do pedido',
+    params: IdParamSchema,
+    body: UpdateOrderStatusSchema,
+    responses: {
+      200: SuccessResponseSchema.create({
+        schema: OrderSchema,
+        dataDescription: 'Dados do pedido atualizado',
+        message: 'Status do pedido alterado com sucesso',
+      }),
+      400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema,
+    },
+  })
+  async updateOrderStatus(
+    updateData: UpdateOrderStatusSchema,
+    req: AuthenticatedRequest,
+    res: Response,
+  ) {
+    try {
+      const { id } = req.params
+
+      if (!req.user?.organizationId || !req.user?.organization?.type) {
+        return res
+          .status(400)
+          .json(
+            createErrorResponse(
+              'Informações da organização não encontradas',
+              'INVALID_USER_DATA',
+            ),
+          )
+      }
+
+      const updatedOrder = await this.ordersService.updateOrderStatus(
+        id,
+        updateData.newStatus,
+        req.user.id,
+        req.user.organizationId,
+        req.user.organization.type,
+        updateData.note,
+      )
+
+      return res
+        .status(200)
+        .json(
+          createSuccessResponse(
+            'Status do pedido alterado com sucesso',
+            updatedOrder,
           ),
         )
     } catch (error: any) {

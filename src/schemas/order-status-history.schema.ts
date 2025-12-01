@@ -8,6 +8,7 @@ import {
 import { ApiProperty } from '@/decorators'
 import { OrderStatus } from '@/enums'
 import { VALIDATION_MESSAGES } from '@/utils'
+import { UserSchema } from './user.schema'
 
 export class OrderStatusHistorySchema {
   @ApiProperty({
@@ -53,14 +54,12 @@ export class OrderStatusHistorySchema {
   newStatus: OrderStatus
 
   @ApiProperty({
-    description: 'ID do usuário que alterou o status',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    type: 'string',
-    format: 'uuid',
+    description: 'Usuário que alterou o status',
+    schema: UserSchema,
     required: false,
     readOnly: true,
   })
-  changedBy?: string
+  changedBy?: UserSchema
 
   @ApiProperty({
     description: 'Observação sobre a mudança',

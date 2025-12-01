@@ -12,6 +12,7 @@ import { ApiProperty } from '@/decorators'
 import { OrderStatus } from '@/enums'
 import { OrderItemSchema } from './order-item.schema'
 import { VALIDATION_MESSAGES } from '@/utils'
+import { OrderStatusHistorySchema } from './order-status-history.schema'
 
 export class OrderSchema {
   @ApiProperty({
@@ -182,4 +183,13 @@ export class OrderSchema {
   @ValidateNested({ each: true })
   @Type(() => OrderItemSchema)
   items: OrderItemSchema[]
+
+  @ApiProperty({
+    description: 'Histórico de status do pedido',
+    type: 'array',
+    schema: OrderStatusHistorySchema,
+    required: true,
+    readOnly: true,
+  })
+  statusHistory: OrderStatusHistorySchema[]
 }

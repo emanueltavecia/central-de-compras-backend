@@ -34,6 +34,29 @@ export class OrdersRepository extends BaseRepository {
       appliedCashbackAmount: row.applied_cashback_amount,
     }))
 
+    const statusHistoryQuery = `
+      SELECT 
+        osh.*,
+        json_build_object(
+          'id', u.id,
+          'email', u.email,
+          'fullName', u.full_name,
+          'phone', u.phone,
+          'roleId', u.role_id,
+          'organizationId', u.organization_id,
+          'status', u.status,
+          'profileImageUrl', u.profile_image_url,
+          'createdAt', u.created_at
+        ) as changed_by_user
+      FROM order_status_history osh
+      LEFT JOIN users u ON osh.changed_by = u.id
+      WHERE osh.order_id = $1 
+      ORDER BY osh.created_at ASC
+    `
+    const statusHistoryResult = await client.query(statusHistoryQuery, [id])
+
+    order.statusHistory = statusHistoryResult.rows
+
     return order as OrderSchema
   }
 
@@ -96,6 +119,22 @@ export class OrdersRepository extends BaseRepository {
         await client.query(itemQuery, itemParams)
       }
 
+      const statusHistoryQuery = `
+        INSERT INTO order_status_history (
+          order_id, previous_status, new_status, changed_by, note
+        ) VALUES ($1, $2, $3, $4, $5)
+      `
+
+      const statusHistoryParams = [
+        createdOrder.id,
+        null,
+        createdOrder.status,
+        order.createdBy ?? null,
+        'Pedido criado',
+      ]
+
+      await client.query(statusHistoryQuery, statusHistoryParams)
+
       return this.findByIdWithTransaction(createdOrder.id, client)
     })
   }
@@ -104,24 +143,55 @@ export class OrdersRepository extends BaseRepository {
     const orderQuery = `
       SELECT o.*,
              COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', oi.id,
-                   'productId', oi.product_id,
-                   'productNameSnapshot', oi.product_name_snapshot,
-                   'quantity', oi.quantity,
-                   'unitPrice', oi.unit_price,
-                   'unitPriceAdjusted', oi.unit_price_adjusted,
-                   'totalPrice', oi.total_price,
-                   'appliedCashbackAmount', oi.applied_cashback_amount
+               (
+                 SELECT json_agg(
+                   json_build_object(
+                     'id', oi.id,
+                     'productId', oi.product_id,
+                     'productNameSnapshot', oi.product_name_snapshot,
+                     'quantity', oi.quantity,
+                     'unitPrice', oi.unit_price,
+                     'unitPriceAdjusted', oi.unit_price_adjusted,
+                     'totalPrice', oi.total_price,
+                     'appliedCashbackAmount', oi.applied_cashback_amount
+                   )
                  )
-               ) FILTER (WHERE oi.id IS NOT NULL),
+                 FROM order_items oi
+                 WHERE oi.order_id = o.id
+               ),
                '[]'::json
-             ) as items
+             ) as items,
+             COALESCE(
+               (
+                 SELECT json_agg(
+                   json_build_object(
+                     'id', osh.id,
+                     'orderId', osh.order_id,
+                     'previousStatus', osh.previous_status,
+                     'newStatus', osh.new_status,
+                     'changedBy', json_build_object(
+                       'id', u.id,
+                       'email', u.email,
+                       'fullName', u.full_name,
+                       'phone', u.phone,
+                       'roleId', u.role_id,
+                       'organizationId', u.organization_id,
+                       'status', u.status,
+                       'profileImageUrl', u.profile_image_url,
+                       'createdAt', u.created_at
+                     ),
+                     'note', osh.note,
+                     'createdAt', osh.created_at
+                   ) ORDER BY osh.created_at ASC
+                 )
+                 FROM order_status_history osh
+                 LEFT JOIN users u ON osh.changed_by = u.id
+                 WHERE osh.order_id = o.id
+               ),
+               '[]'::json
+             ) as status_history
       FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
       WHERE o.id = $1
-      GROUP BY o.id
     `
 
     const result = await this.executeQuery<OrderSchema>(orderQuery, [id])
@@ -177,24 +247,55 @@ export class OrdersRepository extends BaseRepository {
     const dataQuery = `
       SELECT o.*,
              COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', oi.id,
-                   'productId', oi.product_id,
-                   'productNameSnapshot', oi.product_name_snapshot,
-                   'quantity', oi.quantity,
-                   'unitPrice', oi.unit_price,
-                   'unitPriceAdjusted', oi.unit_price_adjusted,
-                   'totalPrice', oi.total_price,
-                   'appliedCashbackAmount', oi.applied_cashback_amount
+               (
+                 SELECT json_agg(
+                   json_build_object(
+                     'id', oi.id,
+                     'productId', oi.product_id,
+                     'productNameSnapshot', oi.product_name_snapshot,
+                     'quantity', oi.quantity,
+                     'unitPrice', oi.unit_price,
+                     'unitPriceAdjusted', oi.unit_price_adjusted,
+                     'totalPrice', oi.total_price,
+                     'appliedCashbackAmount', oi.applied_cashback_amount
+                   )
                  )
-               ) FILTER (WHERE oi.id IS NOT NULL),
+                 FROM order_items oi
+                 WHERE oi.order_id = o.id
+               ),
                '[]'::json
-             ) as items
+             ) as items,
+             COALESCE(
+               (
+                 SELECT json_agg(
+                   json_build_object(
+                     'id', osh.id,
+                     'orderId', osh.order_id,
+                     'previousStatus', osh.previous_status,
+                     'newStatus', osh.new_status,
+                     'changedBy', json_build_object(
+                       'id', u.id,
+                       'email', u.email,
+                       'fullName', u.full_name,
+                       'phone', u.phone,
+                       'roleId', u.role_id,
+                       'organizationId', u.organization_id,
+                       'status', u.status,
+                       'profileImageUrl', u.profile_image_url,
+                       'createdAt', u.created_at
+                     ),
+                     'note', osh.note,
+                     'createdAt', osh.created_at
+                   ) ORDER BY osh.created_at ASC
+                 )
+                 FROM order_status_history osh
+                 LEFT JOIN users u ON osh.changed_by = u.id
+                 WHERE osh.order_id = o.id
+               ),
+               '[]'::json
+             ) as status_history
       FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
       ${whereClause}
-      GROUP BY o.id
       ORDER BY o.created_at DESC
     `
 
@@ -204,5 +305,55 @@ export class OrdersRepository extends BaseRepository {
       orders: ordersResult,
       total: ordersResult.length,
     }
+  }
+
+  async updateStatus(
+    orderId: string,
+    newStatus: OrderStatus,
+    changedBy: string,
+    note?: string,
+  ): Promise<OrderSchema> {
+    return this.executeTransaction(async (client) => {
+      const currentOrderQuery = `
+        SELECT * FROM orders WHERE id = $1
+      `
+      const currentOrderResult = await client.query<OrderSchema>(
+        currentOrderQuery,
+        [orderId],
+      )
+      const currentOrder = currentOrderResult.rows[0]
+
+      if (!currentOrder) {
+        throw new Error('Order not found')
+      }
+
+      const previousStatus = currentOrder.status
+
+      const updateQuery = `
+        UPDATE orders 
+        SET status = $1
+        WHERE id = $2
+        RETURNING *
+      `
+      await client.query(updateQuery, [newStatus, orderId])
+
+      const statusHistoryQuery = `
+        INSERT INTO order_status_history (
+          order_id, previous_status, new_status, changed_by, note
+        ) VALUES ($1, $2, $3, $4, $5)
+      `
+
+      const statusHistoryParams = [
+        orderId,
+        previousStatus ?? null,
+        newStatus,
+        changedBy,
+        note ?? null,
+      ]
+
+      await client.query(statusHistoryQuery, statusHistoryParams)
+
+      return this.findByIdWithTransaction(orderId, client)
+    })
   }
 }
