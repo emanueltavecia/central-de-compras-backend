@@ -66,8 +66,8 @@ export class OrdersRepository extends BaseRepository {
         INSERT INTO orders (
           store_org_id, supplier_org_id, status, shipping_address_id,
           subtotal_amount, shipping_cost, adjustments, total_amount,
-          payment_condition_id, created_by, total_cashback, applied_supplier_state_condition_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          payment_condition_id, created_by, total_cashback, applied_supplier_state_condition_id, cashback_used
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
       `
 
@@ -84,6 +84,7 @@ export class OrdersRepository extends BaseRepository {
         order.createdBy ?? null,
         order.totalCashback ?? 0,
         order.appliedSupplierStateConditionId ?? null,
+        order.cashbackUsed ?? 0,
       ]
 
       const orderResult = await client.query(orderQuery, orderParams)
