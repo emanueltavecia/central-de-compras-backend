@@ -9,7 +9,35 @@ export class OrdersRepository extends BaseRepository {
     client: PoolClient,
   ): Promise<OrderSchema> {
     const orderQuery = `
-      SELECT * FROM orders WHERE id = $1
+      SELECT o.*,
+             json_build_object(
+               'id', store_org.id,
+               'type', store_org.type,
+               'legalName', store_org.legal_name,
+               'tradeName', store_org.trade_name,
+               'taxId', store_org.tax_id,
+               'phone', store_org.phone,
+               'email', store_org.email,
+               'website', store_org.website,
+               'active', store_org.active,
+               'createdAt', store_org.created_at
+             ) as store_org,
+             json_build_object(
+               'id', supplier_org.id,
+               'type', supplier_org.type,
+               'legalName', supplier_org.legal_name,
+               'tradeName', supplier_org.trade_name,
+               'taxId', supplier_org.tax_id,
+               'phone', supplier_org.phone,
+               'email', supplier_org.email,
+               'website', supplier_org.website,
+               'active', supplier_org.active,
+               'createdAt', supplier_org.created_at
+             ) as supplier_org
+      FROM orders o
+      LEFT JOIN organizations store_org ON o.store_org_id = store_org.id
+      LEFT JOIN organizations supplier_org ON o.supplier_org_id = supplier_org.id
+      WHERE o.id = $1
     `
     const orderResult = await client.query(orderQuery, [id])
     const order = orderResult.rows[0]
@@ -143,6 +171,30 @@ export class OrdersRepository extends BaseRepository {
   async findById(id: string): Promise<OrderSchema | null> {
     const orderQuery = `
       SELECT o.*,
+             json_build_object(
+               'id', store_org.id,
+               'type', store_org.type,
+               'legalName', store_org.legal_name,
+               'tradeName', store_org.trade_name,
+               'taxId', store_org.tax_id,
+               'phone', store_org.phone,
+               'email', store_org.email,
+               'website', store_org.website,
+               'active', store_org.active,
+               'createdAt', store_org.created_at
+             ) as store_org,
+             json_build_object(
+               'id', supplier_org.id,
+               'type', supplier_org.type,
+               'legalName', supplier_org.legal_name,
+               'tradeName', supplier_org.trade_name,
+               'taxId', supplier_org.tax_id,
+               'phone', supplier_org.phone,
+               'email', supplier_org.email,
+               'website', supplier_org.website,
+               'active', supplier_org.active,
+               'createdAt', supplier_org.created_at
+             ) as supplier_org,
              COALESCE(
                (
                  SELECT json_agg(
@@ -192,6 +244,8 @@ export class OrdersRepository extends BaseRepository {
                '[]'::json
              ) as status_history
       FROM orders o
+      LEFT JOIN organizations store_org ON o.store_org_id = store_org.id
+      LEFT JOIN organizations supplier_org ON o.supplier_org_id = supplier_org.id
       WHERE o.id = $1
     `
 
@@ -247,6 +301,30 @@ export class OrdersRepository extends BaseRepository {
 
     const dataQuery = `
       SELECT o.*,
+             json_build_object(
+               'id', store_org.id,
+               'type', store_org.type,
+               'legalName', store_org.legal_name,
+               'tradeName', store_org.trade_name,
+               'taxId', store_org.tax_id,
+               'phone', store_org.phone,
+               'email', store_org.email,
+               'website', store_org.website,
+               'active', store_org.active,
+               'createdAt', store_org.created_at
+             ) as store_org,
+             json_build_object(
+               'id', supplier_org.id,
+               'type', supplier_org.type,
+               'legalName', supplier_org.legal_name,
+               'tradeName', supplier_org.trade_name,
+               'taxId', supplier_org.tax_id,
+               'phone', supplier_org.phone,
+               'email', supplier_org.email,
+               'website', supplier_org.website,
+               'active', supplier_org.active,
+               'createdAt', supplier_org.created_at
+             ) as supplier_org,
              COALESCE(
                (
                  SELECT json_agg(
@@ -296,6 +374,8 @@ export class OrdersRepository extends BaseRepository {
                '[]'::json
              ) as status_history
       FROM orders o
+      LEFT JOIN organizations store_org ON o.store_org_id = store_org.id
+      LEFT JOIN organizations supplier_org ON o.supplier_org_id = supplier_org.id
       ${whereClause}
       ORDER BY o.created_at DESC
     `

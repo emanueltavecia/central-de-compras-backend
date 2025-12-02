@@ -59,6 +59,8 @@ export class OrdersService {
       totalCashback: _totalCashback,
       appliedSupplierStateConditionId: _appliedSupplierStateConditionId,
       createdBy: _createdBy,
+      storeOrg: _storeOrg,
+      supplierOrg: _supplierOrg,
       ...cleanData
     } = data
 

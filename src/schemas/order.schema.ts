@@ -13,6 +13,7 @@ import { OrderStatus } from '@/enums'
 import { OrderItemSchema } from './order-item.schema'
 import { VALIDATION_MESSAGES } from '@/utils'
 import { OrderStatusHistorySchema } from './order-status-history.schema'
+import { OrganizationSchema } from './organization.schema'
 
 export class OrderSchema {
   @ApiProperty({
@@ -36,6 +37,14 @@ export class OrderSchema {
   storeOrgId: string
 
   @ApiProperty({
+    description: 'Organização loja',
+    schema: OrganizationSchema,
+    required: true,
+    readOnly: true,
+  })
+  storeOrg: OrganizationSchema
+
+  @ApiProperty({
     description: 'ID da organização fornecedora',
     example: '123e4567-e89b-12d3-a456-426614174000',
     type: 'string',
@@ -45,6 +54,14 @@ export class OrderSchema {
   @IsUUID(undefined, { message: VALIDATION_MESSAGES.INVALID_UUID })
   @IsNotEmpty({ message: VALIDATION_MESSAGES.REQUIRED })
   supplierOrgId: string
+
+  @ApiProperty({
+    description: 'Organização fornecedora',
+    schema: OrganizationSchema,
+    required: true,
+    readOnly: true,
+  })
+  supplierOrg: OrganizationSchema
 
   @ApiProperty({
     description: 'Status do pedido',
