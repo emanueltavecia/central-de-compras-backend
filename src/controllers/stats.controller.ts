@@ -6,9 +6,11 @@ import { StatsService } from '@/services/stats.service'
 import {
   ErrorResponseSchema,
   SuccessResponseSchema,
-  StatsSchema,
+  AdminStatsSchema,
+  SupplierStatsSchema,
+  StoreStatsSchema,
 } from '@/schemas'
-import { PermissionName } from '@/enums'
+import { UserRole } from '@/enums'
 
 @ApiController('/stats', ['Stats'])
 export class StatsController {
@@ -17,11 +19,11 @@ export class StatsController {
   @ApiRoute({
     method: 'get',
     path: '/',
-    summary: 'Obter estatísticas do sistema',
-    permissions: [PermissionName.MANAGE_ORGANIZATIONS],
+    summary:
+      'Obter estatísticas do sistema baseadas no tipo de usuário (Admin, Fornecedor ou Loja)',
     responses: {
       200: SuccessResponseSchema.create({
-        schema: StatsSchema,
+        schema: AdminStatsSchema,
         dataDescription: 'Estatísticas do sistema',
         message: 'Estatísticas obtidas com sucesso',
       }),
@@ -32,7 +34,58 @@ export class StatsController {
   })
   async getStats(req: AuthenticatedRequest, res: Response) {
     try {
-      const stats = await this.statsService.getStats()
+      const userRole = req.user?.role?.name
+      const organizationId = req.user?.organizationId
+
+      let stats:
+        | AdminStatsSchema
+        | SupplierStatsSchema
+        | StoreStatsSchema
+        | undefined
+
+      switch (userRole) {
+        case UserRole.ADMIN:
+          stats = await this.statsService.getAdminStats()
+          break
+
+        case UserRole.SUPPLIER:
+          if (!organizationId) {
+            return res
+              .status(400)
+              .json(
+                createErrorResponse(
+                  'ID da organização não encontrado',
+                  'ORGANIZATION_ID_NOT_FOUND',
+                ),
+              )
+          }
+          stats = await this.statsService.getSupplierStats(organizationId)
+          break
+
+        case UserRole.STORE:
+          if (!organizationId) {
+            return res
+              .status(400)
+              .json(
+                createErrorResponse(
+                  'ID da organização não encontrado',
+                  'ORGANIZATION_ID_NOT_FOUND',
+                ),
+              )
+          }
+          stats = await this.statsService.getStoreStats(organizationId)
+          break
+
+        default:
+          return res
+            .status(403)
+            .json(
+              createErrorResponse(
+                'Tipo de usuário não autorizado',
+                'UNAUTHORIZED_USER_ROLE',
+              ),
+            )
+      }
 
       return res
         .status(200)

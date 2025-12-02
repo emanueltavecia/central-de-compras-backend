@@ -101,24 +101,47 @@ export class AddressService {
     try {
       const cleanData = this.removeReadOnlyFields(addressData as AddressSchema)
 
-      if (addressData.street !== undefined && typeof addressData.street !== 'string') {
+      if (
+        addressData.street !== undefined &&
+        typeof addressData.street !== 'string'
+      ) {
         throw new HttpError('street deve ser uma string', 400, 'INVALID_STREET')
       }
 
-      if (addressData.neighborhood !== undefined && typeof addressData.neighborhood !== 'string') {
-        throw new HttpError('neighborhood deve ser uma string', 400, 'INVALID_NEIGHBORHOOD')
+      if (
+        addressData.neighborhood !== undefined &&
+        typeof addressData.neighborhood !== 'string'
+      ) {
+        throw new HttpError(
+          'neighborhood deve ser uma string',
+          400,
+          'INVALID_NEIGHBORHOOD',
+        )
       }
 
-      if (addressData.city !== undefined && typeof addressData.city !== 'string') {
+      if (
+        addressData.city !== undefined &&
+        typeof addressData.city !== 'string'
+      ) {
         throw new HttpError('city deve ser uma string', 400, 'INVALID_CITY')
       }
 
-      if (addressData.state !== undefined && typeof addressData.state !== 'string') {
+      if (
+        addressData.state !== undefined &&
+        typeof addressData.state !== 'string'
+      ) {
         throw new HttpError('state deve ser uma string', 400, 'INVALID_STATE')
       }
 
-      if (addressData.postalCode !== undefined && typeof addressData.postalCode !== 'string') {
-        throw new HttpError('postalCode deve ser uma string', 400, 'INVALID_POSTAL_CODE')
+      if (
+        addressData.postalCode !== undefined &&
+        typeof addressData.postalCode !== 'string'
+      ) {
+        throw new HttpError(
+          'postalCode deve ser uma string',
+          400,
+          'INVALID_POSTAL_CODE',
+        )
       }
 
       const updatedAddress = await this.addressRepository.update(id, cleanData)

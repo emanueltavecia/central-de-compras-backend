@@ -17,7 +17,9 @@ export class ContactRepository extends BaseRepository {
           [contact.organizationId],
         )
         if (existingPrimary.rows.length > 0) {
-          throw new Error('Já existe um contato principal para esta organização')
+          throw new Error(
+            'Já existe um contato principal para esta organização',
+          )
         }
       }
 
@@ -90,7 +92,9 @@ export class ContactRepository extends BaseRepository {
           existingPrimary.rows.length > 0 &&
           existingPrimary.rows[0].id !== id
         ) {
-          throw new Error('Já existe um contato principal para esta organização')
+          throw new Error(
+            'Já existe um contato principal para esta organização',
+          )
         }
       }
 

@@ -21,6 +21,7 @@ import {
   CampaignType,
   OrderStatus,
   CashbackReferenceType,
+  OrgType,
 } from '@/enums'
 import { HttpError } from '@/utils'
 import { CashbackService } from './cashback.service'
@@ -58,6 +59,8 @@ export class OrdersService {
       totalCashback: _totalCashback,
       appliedSupplierStateConditionId: _appliedSupplierStateConditionId,
       createdBy: _createdBy,
+      storeOrg: _storeOrg,
+      supplierOrg: _supplierOrg,
       ...cleanData
     } = data
 
@@ -432,8 +435,34 @@ export class OrdersService {
                 campaign.type === CampaignType.CASHBACK &&
                 campaign.cashbackPercent
               ) {
+                let eligibleAmount = subtotalAmount
+
+                if (
+                  campaign.scope === CampaignScope.PRODUCT &&
+                  campaign.productIds
+                ) {
+                  eligibleAmount = calculatedItems
+                    .filter((item) =>
+                      campaign.productIds?.includes(item.productId),
+                    )
+                    .reduce((sum, item) => sum + item.totalPrice, 0)
+                } else if (
+                  campaign.scope === CampaignScope.CATEGORY &&
+                  campaign.categoryId
+                ) {
+                  eligibleAmount = 0
+                  for (const item of calculatedItems) {
+                    const product = await this.productRepository.findById(
+                      item.productId,
+                    )
+                    if (product && product.categoryId === campaign.categoryId) {
+                      eligibleAmount += item.totalPrice
+                    }
+                  }
+                }
+
                 const campaignCashback =
-                  (subtotalAmount * campaign.cashbackPercent) / 100
+                  (eligibleAmount * campaign.cashbackPercent) / 100
                 totalCashback += campaignCashback
               }
             }
@@ -549,5 +578,73 @@ export class OrdersService {
       }
     }
     return false
+  }
+
+  async updateOrderStatus(
+    orderId: string,
+    newStatus: OrderStatus,
+    changedBy: string,
+    userOrgId: string,
+    userOrgType: OrgType,
+    note?: string,
+  ): Promise<OrderSchema> {
+    const currentOrder = await this.ordersRepository.findById(orderId)
+
+    if (!currentOrder) {
+      throw new HttpError('Pedido não encontrado', 404, 'ORDER_NOT_FOUND')
+    }
+
+    if (userOrgType === OrgType.STORE) {
+      if (newStatus !== OrderStatus.CANCELLED) {
+        throw new HttpError(
+          'Loja pode apenas cancelar pedidos',
+          403,
+          'INVALID_STATUS_TRANSITION',
+        )
+      }
+
+      if (currentOrder.storeOrgId !== userOrgId) {
+        throw new HttpError(
+          'Você não tem permissão para alterar este pedido',
+          403,
+          'FORBIDDEN',
+        )
+      }
+
+      const allowedStatusForCancel = [
+        OrderStatus.PLACED,
+        OrderStatus.CONFIRMED,
+        OrderStatus.SEPARATED,
+      ]
+
+      if (!allowedStatusForCancel.includes(currentOrder.status!)) {
+        throw new HttpError(
+          `Pedido no status ${currentOrder.status} não pode ser cancelado`,
+          400,
+          'INVALID_STATUS_FOR_CANCELLATION',
+        )
+      }
+    } else if (userOrgType === OrgType.SUPPLIER) {
+      if (currentOrder.supplierOrgId !== userOrgId) {
+        throw new HttpError(
+          'Você não tem permissão para alterar este pedido',
+          403,
+          'FORBIDDEN',
+        )
+      }
+    } else {
+      throw new HttpError(
+        'Tipo de organização inválido para esta operação',
+        403,
+        'INVALID_ORG_TYPE',
+      )
+    }
+
+    return this.ordersRepository.updateStatus(
+      orderId,
+      newStatus,
+      changedBy,
+      note,
+    )
   }
 }
