@@ -433,8 +433,34 @@ export class OrdersService {
                 campaign.type === CampaignType.CASHBACK &&
                 campaign.cashbackPercent
               ) {
+                let eligibleAmount = subtotalAmount
+
+                if (
+                  campaign.scope === CampaignScope.PRODUCT &&
+                  campaign.productIds
+                ) {
+                  eligibleAmount = calculatedItems
+                    .filter((item) =>
+                      campaign.productIds?.includes(item.productId),
+                    )
+                    .reduce((sum, item) => sum + item.totalPrice, 0)
+                } else if (
+                  campaign.scope === CampaignScope.CATEGORY &&
+                  campaign.categoryId
+                ) {
+                  eligibleAmount = 0
+                  for (const item of calculatedItems) {
+                    const product = await this.productRepository.findById(
+                      item.productId,
+                    )
+                    if (product && product.categoryId === campaign.categoryId) {
+                      eligibleAmount += item.totalPrice
+                    }
+                  }
+                }
+
                 const campaignCashback =
-                  (subtotalAmount * campaign.cashbackPercent) / 100
+                  (eligibleAmount * campaign.cashbackPercent) / 100
                 totalCashback += campaignCashback
               }
             }
