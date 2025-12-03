@@ -214,6 +214,13 @@ export class OrdersService {
 
       const createdOrder = await this.ordersRepository.create(orderData)
 
+      for (const item of orderData.items) {
+        await this.productRepository.updateQuantity(
+          item.productId,
+          -item.quantity,
+        )
+      }
+
       if (cashbackUsed > 0) {
         await this.cashbackService.useCashback({
           organizationId: order.storeOrgId,
@@ -640,11 +647,54 @@ export class OrdersService {
       )
     }
 
-    return this.ordersRepository.updateStatus(
+    const cancellationStatuses = [OrderStatus.CANCELLED, OrderStatus.REJECTED]
+    const isNewStatusCancellation = cancellationStatuses.includes(newStatus)
+    const wasAlreadyCancelled = cancellationStatuses.includes(
+      currentOrder.status!,
+    )
+
+    if (!isNewStatusCancellation && wasAlreadyCancelled && currentOrder.items) {
+      for (const item of currentOrder.items) {
+        const product = await this.productRepository.findById(item.productId)
+        if (
+          product &&
+          product.availableQuantity !== undefined &&
+          product.availableQuantity < item.quantity
+        ) {
+          throw new HttpError(
+            `Quantidade insuficiente em estoque para o produto ${product.name}. Disponível: ${product.availableQuantity}, Necessário: ${item.quantity}`,
+            400,
+            'INSUFFICIENT_STOCK',
+          )
+        }
+      }
+    }
+
+    const updatedOrder = await this.ordersRepository.updateStatus(
       orderId,
       newStatus,
       changedBy,
       note,
     )
+
+    if (currentOrder.items) {
+      if (isNewStatusCancellation && !wasAlreadyCancelled) {
+        for (const item of currentOrder.items) {
+          await this.productRepository.updateQuantity(
+            item.productId,
+            item.quantity,
+          )
+        }
+      } else if (!isNewStatusCancellation && wasAlreadyCancelled) {
+        for (const item of currentOrder.items) {
+          await this.productRepository.updateQuantity(
+            item.productId,
+            -item.quantity,
+          )
+        }
+      }
+    }
+
+    return updatedOrder
   }
 }

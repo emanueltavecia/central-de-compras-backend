@@ -112,6 +112,23 @@ export class ProductRepository extends BaseRepository {
     return result[0] || null
   }
 
+  async updateQuantity(
+    id: string,
+    quantityChange: number,
+  ): Promise<ProductSchema | null> {
+    const query = `
+      UPDATE products 
+      SET available_quantity = COALESCE(available_quantity, 0) + $1 
+      WHERE id = $2 
+      RETURNING *
+    `
+    const result = await this.executeQuery<ProductSchema>(query, [
+      quantityChange,
+      id,
+    ])
+    return result[0] || null
+  }
+
   private toSnakeCase(str: string): string {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
   }
