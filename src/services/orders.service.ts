@@ -640,6 +640,34 @@ export class OrdersService {
       )
     }
 
+    // Atualizar estoque quando o pedido for confirmado
+    if (
+      newStatus === OrderStatus.CONFIRMED &&
+      currentOrder.status !== OrderStatus.CONFIRMED
+    ) {
+      // Diminuir quantidade dos produtos
+      for (const item of currentOrder.items) {
+        await this.productRepository.updateQuantity(
+          item.productId,
+          -item.quantity,
+        )
+      }
+    }
+
+    // Devolver estoque quando o pedido for cancelado
+    if (
+      newStatus === OrderStatus.CANCELLED &&
+      currentOrder.status === OrderStatus.CONFIRMED
+    ) {
+      // Devolver quantidade dos produtos
+      for (const item of currentOrder.items) {
+        await this.productRepository.updateQuantity(
+          item.productId,
+          item.quantity,
+        )
+      }
+    }
+
     return this.ordersRepository.updateStatus(
       orderId,
       newStatus,
