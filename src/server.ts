@@ -13,9 +13,13 @@ import { SWAGGER_HTML } from './utils/swagger-html'
 
 const app: Express = express()
 
-const isDbConnected = await database.testConnection()
-if (!isDbConnected) {
-  console.warn('Database connection failed, but server will continue')
+// Only test database connection in development environment
+// In production/serverless (Vercel), connections are established lazily on demand
+if (config.server.environment === 'development') {
+  const isDbConnected = await database.testConnection()
+  if (!isDbConnected) {
+    console.warn('Database connection failed, but server will continue')
+  }
 }
 
 app.use(
