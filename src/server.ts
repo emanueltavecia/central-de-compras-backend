@@ -22,6 +22,8 @@ if (config.server.environment === 'development') {
     .then((isDbConnected) => {
       if (!isDbConnected) {
         console.warn('Database connection failed, but server will continue')
+      } else {
+        console.log('Database connection test successful')
       }
     })
     .catch((error) => {
