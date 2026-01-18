@@ -6,5 +6,11 @@
       "src": "*.js",
       "use": "@vercel/node"
     }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/server-production.js"
+    }
   ]
 }
