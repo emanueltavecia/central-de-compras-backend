@@ -81,9 +81,6 @@ usersRoutes.delete(
       }
       const user = await usersService.getUserById(req.user.id)
       if (user?.profileImageUrl) {
-        // profileImageUrl is a URL path like /uploads/profile/file.jpg
-        // We need to extract the relative path within the uploads directory (profile/file.jpg)
-        // to construct the correct file system path
         const relativePath = user.profileImageUrl.startsWith('/uploads/')
           ? user.profileImageUrl.substring('/uploads/'.length)
           : user.profileImageUrl
