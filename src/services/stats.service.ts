@@ -21,6 +21,7 @@ export class StatsService {
   private campaignsRepository = new CampaignsRepository()
   private supplierStateConditionsRepository =
     new SupplierStateConditionsRepository()
+
   private ordersRepository = new OrdersRepository()
   private paymentConditionsRepository = new PaymentConditionsRepository()
   private productRepository = new ProductRepository()

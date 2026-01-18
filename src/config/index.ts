@@ -1,13 +1,21 @@
 import dotenv from 'dotenv'
 import { SignOptions } from 'jsonwebtoken'
+import path from 'path'
 
 dotenv.config()
+
+const isProduction = process.env.NODE_ENV === 'production'
 
 export const config = {
   server: {
     port: parseInt(process.env.PORT || '3000', 10),
     host: process.env.HOST || 'localhost',
     environment: process.env.NODE_ENV || 'development',
+  },
+  uploads: {
+    baseDir: isProduction
+      ? path.join('/tmp', 'uploads')
+      : path.join(process.cwd(), 'uploads'),
   },
   cors: {
     origin: process.env.CORS_ORIGIN || true,

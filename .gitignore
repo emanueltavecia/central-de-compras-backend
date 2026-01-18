@@ -1,4 +1,5 @@
 node_modules
+package-lock.json
 
 dist
 build
@@ -19,3 +20,5 @@ build
 .Trashes
 ehthumbs.db
 Thumbs.db
+.vercel
+.env*.local
