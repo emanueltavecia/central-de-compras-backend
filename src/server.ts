@@ -13,9 +13,17 @@ import { SWAGGER_HTML } from './utils/swagger-html'
 
 const app: Express = express()
 
-const isDbConnected = await database.testConnection()
-if (!isDbConnected) {
-  console.warn('Database connection failed, but server will continue')
+if (config.server.environment === 'development') {
+  database
+    .testConnection()
+    .then((isDbConnected) => {
+      if (!isDbConnected) {
+        console.warn('Database connection failed, but server will continue')
+      }
+    })
+    .catch((error) => {
+      console.error('Error testing database connection:', error)
+    })
 }
 
 app.use(
