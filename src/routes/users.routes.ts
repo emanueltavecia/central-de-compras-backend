@@ -7,11 +7,14 @@ import { authMiddleware } from '@/middlewares'
 import { UsersService } from '@/services'
 import { UsersController } from '@/controllers'
 import { registerController } from '@/decorators'
+import { config } from '@/config'
 
 export const usersRoutes: ExpressRouter = Router()
 
-const uploadDir = path.join(process.cwd(), 'uploads', 'profile')
-fs.mkdirSync(uploadDir, { recursive: true })
+const uploadDir = path.join(config.uploads.baseDir, 'profile')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
@@ -78,7 +81,10 @@ usersRoutes.delete(
       }
       const user = await usersService.getUserById(req.user.id)
       if (user?.profileImageUrl) {
-        const filePath = path.join(process.cwd(), user.profileImageUrl)
+        const filePath = path.join(
+          config.uploads.baseDir,
+          user.profileImageUrl.replace('/uploads', ''),
+        )
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)
         }

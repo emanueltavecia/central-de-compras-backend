@@ -6,9 +6,7 @@ import {
 import { VALIDATION_MESSAGES } from '@/utils'
 
 @ValidatorConstraint({ name: 'isEndDateAfterStartDate', async: false })
-export class IsEndDateAfterStartDateValidator
-  implements ValidatorConstraintInterface
-{
+export class IsEndDateAfterStartDateValidator implements ValidatorConstraintInterface {
   validate(endAt: string, args: ValidationArguments) {
     const { startAt } = args.object as any
     if (!startAt || !endAt) {

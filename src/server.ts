@@ -38,8 +38,10 @@ app.use(cors(config.cors))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-const uploadsBase = path.join(process.cwd(), 'uploads')
-fs.mkdirSync(path.join(uploadsBase, 'profile'), { recursive: true })
+const uploadsBase = config.uploads.baseDir
+if (!fs.existsSync(path.join(uploadsBase, 'profile'))) {
+  fs.mkdirSync(path.join(uploadsBase, 'profile'), { recursive: true })
+}
 app.use(
   '/uploads',
   (req, res, next) => {
