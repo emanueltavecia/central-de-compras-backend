@@ -13,9 +13,6 @@ import { SWAGGER_HTML } from './utils/swagger-html'
 
 const app: Express = express()
 
-// Only test database connection in development environment
-// In production/serverless (Vercel), connections are established lazily on demand
-// This prevents connection pool exhaustion from repeated tests on every function invocation
 if (config.server.environment === 'development') {
   database
     .testConnection()
