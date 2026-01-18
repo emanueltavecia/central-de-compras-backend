@@ -3,8 +3,8 @@
   "buildCommand": "pnpm build",
   "builds": [
     {
-      "use": "@vercel/node",
-      "src": "server-production.js"
+      "src": "*.js",
+      "use": "@vercel/node"
     }
   ]
 }
