@@ -18,7 +18,7 @@ This is the backend of a Purchasing Center platform, developed for the interdisc
 - 🚀 [**API Deploy**](https://central-de-compras-backend.vercel.app/)
 - 🚀 [**Swagger Documentation**](https://central-de-compras-backend.vercel.app/docs)
 - 🚀 [**Front-end Deploy**](https://central-de-compras-frontend.vercel.app/)
-- 🔙 [**Front-end Repository**](https://github.com/emanueltavecia/foodexplorer-api)
+- 🔙 [**Front-end Repository**](https://github.com/emanueltavecia/central-de-compras-frontend)
 
 ## 🚀 Technologies Used
 
