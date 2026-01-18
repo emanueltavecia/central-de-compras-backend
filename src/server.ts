@@ -1,11 +1,10 @@
 import 'reflect-metadata'
 import { config } from './config'
-import express, { Express, Request, Response } from 'express'
+import express, { Express } from 'express'
 import path from 'path'
 import fs from 'fs'
 import cors from 'cors'
 import helmet from 'helmet'
-import swaggerUi from 'swagger-ui-express'
 
 import { registerRoutes, swaggerPaths } from '@/routes'
 import { generateSwaggerSpec } from '@/decorators'
