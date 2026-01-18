@@ -5,7 +5,6 @@ import path from 'path'
 dotenv.config()
 
 const isProduction = process.env.NODE_ENV === 'production'
-const isVercel = process.env.VERCEL === '1'
 
 export const config = {
   server: {
@@ -14,10 +13,9 @@ export const config = {
     environment: process.env.NODE_ENV || 'development',
   },
   uploads: {
-    baseDir:
-      isProduction || isVercel
-        ? path.join('/tmp', 'uploads')
-        : path.join(process.cwd(), 'uploads'),
+    baseDir: isProduction
+      ? path.join('/tmp', 'uploads')
+      : path.join(process.cwd(), 'uploads'),
   },
   cors: {
     origin: process.env.CORS_ORIGIN || true,
