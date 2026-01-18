@@ -3,7 +3,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/dist/server-production.js"
+      "dest": "/server-production.js"
     }
   ],
   "env": {
