@@ -10,6 +10,7 @@ import swaggerUi from 'swagger-ui-express'
 import { registerRoutes, swaggerPaths } from '@/routes'
 import { generateSwaggerSpec } from '@/decorators'
 import { database } from '@/database/connection'
+import { SWAGGER_HTML } from './utils/swagger-html'
 
 const app: Express = express()
 
@@ -46,7 +47,14 @@ app.use(
 registerRoutes(app)
 
 const swaggerSpec = generateSwaggerSpec(swaggerPaths)
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+app.get('/docs/swagger.json', (req, res) => {
+  res.json(swaggerSpec)
+})
+
+app.get('/docs', (req, res) => {
+  res.send(SWAGGER_HTML)
+})
 
 app.listen(config.server.port, config.server.host, () => {
   console.log(
