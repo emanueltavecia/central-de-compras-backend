@@ -63,13 +63,15 @@ app.get('/docs', (req, res) => {
   res.send(SWAGGER_HTML)
 })
 
-app.listen(config.server.port, config.server.host, () => {
-  console.log(
-    `Servidor rodando em http://${config.server.host}:${config.server.port}`,
-  )
-  console.log(
-    `Documentação disponível em http://${config.server.host}:${config.server.port}/docs`,
-  )
-})
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(config.server.port, config.server.host, () => {
+    console.log(
+      `Servidor rodando em http://${config.server.host}:${config.server.port}`,
+    )
+    console.log(
+      `Documentação disponível em http://${config.server.host}:${config.server.port}/docs`,
+    )
+  })
+}
 
 export default app
