@@ -81,10 +81,11 @@ usersRoutes.delete(
       }
       const user = await usersService.getUserById(req.user.id)
       if (user?.profileImageUrl) {
-        const filePath = path.join(
-          config.uploads.baseDir,
-          user.profileImageUrl.replace('/uploads', ''),
-        )
+        // Extract the relative path after /uploads/
+        const relativePath = user.profileImageUrl.startsWith('/uploads/')
+          ? user.profileImageUrl.substring('/uploads/'.length)
+          : user.profileImageUrl
+        const filePath = path.join(config.uploads.baseDir, relativePath)
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)
         }
