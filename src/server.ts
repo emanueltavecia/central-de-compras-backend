@@ -1,22 +1,59 @@
 import 'reflect-metadata'
-import { createApp, config } from './app'
+import { config } from './config'
+import express, { Express, Request, Response } from 'express'
+import path from 'path'
+import fs from 'fs'
+import cors from 'cors'
+import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
 
-async function start() {
-  try {
-    const app = await createApp()
+import { registerRoutes, swaggerPaths } from '@/routes'
+import { generateSwaggerSpec } from '@/decorators'
+import { database } from '@/database/connection'
 
-    app.listen(config.server.port, config.server.host, () => {
-      console.log(
-        `Servidor rodando em http://${config.server.host}:${config.server.port}`,
-      )
-      console.log(
-        `Documentação disponível em http://${config.server.host}:${config.server.port}/docs`,
-      )
-    })
-  } catch (error) {
-    console.error('Erro ao iniciar o servidor:', error)
-    process.exit(1)
-  }
+const app: Express = express()
+
+const isDbConnected = await database.testConnection()
+if (!isDbConnected) {
+  console.warn('Database connection failed, but server will continue')
 }
 
-start()
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+)
+
+app.use(cors(config.cors))
+
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+const uploadsBase = path.join(process.cwd(), 'uploads')
+fs.mkdirSync(path.join(uploadsBase, 'profile'), { recursive: true })
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+    res.setHeader('Access-Control-Allow-Origin', config.cors.origin as string)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    next()
+  },
+  express.static(uploadsBase),
+)
+
+registerRoutes(app)
+
+const swaggerSpec = generateSwaggerSpec(swaggerPaths)
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+app.listen(config.server.port, config.server.host, () => {
+  console.log(
+    `Servidor rodando em http://${config.server.host}:${config.server.port}`,
+  )
+  console.log(
+    `Documentação disponível em http://${config.server.host}:${config.server.port}/docs`,
+  )
+})
+
+export default app

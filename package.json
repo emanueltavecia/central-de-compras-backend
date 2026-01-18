@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && tsc-alias && resolve-tspaths",
+    "build": "tsc && tsc-alias && tsc-esm-fix --tsconfig tsconfig.json",
+    "vercel-build": "echo hello",
     "start": "node dist/server.js",
     "lint": "prettier --write ./src && eslint ./src --fix",
     "type-check": "tsc --noEmit",
@@ -19,7 +20,6 @@
   "keywords": [],
   "author": "Emanuel Cardoso Tavecia, Guilherme Conti Machado, Gabriel Alves Teixeira, Caio Vinícius Guimarães de Oliveira Dagostim",
   "license": "Veja licença em LICENSE.md",
-  "packageManager": "pnpm@10.12.4",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
@@ -32,11 +32,11 @@
     "helmet": "^8.1.0",
     "humps": "^2.0.1",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "routing-controllers": "^0.11.3",
-    "swagger-ui-express": "^5.0.1",
-    "multer": "^1.4.5-lts.1"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@emanueltavecia/eslint-config": "1.0.5",
@@ -45,13 +45,14 @@
     "@types/express": "^5.0.3",
     "@types/humps": "^2.0.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^1.4.11",
     "@types/node": "^24.5.1",
     "@types/pg": "^8.15.5",
-    "@types/multer": "^1.4.11",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "8.57.1",
     "resolve-tspaths": "^0.8.23",
     "tsc-alias": "^1.8.16",
+    "tsc-esm-fix": "^3.1.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
