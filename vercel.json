@@ -3,7 +3,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "server-production.js",
+      "src": "dist/server-production.js",
       "use": "@vercel/node"
     },
     {
@@ -14,7 +14,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/server-production.js"
+      "dest": "dist/server-production.js"
     }
   ]
 }
