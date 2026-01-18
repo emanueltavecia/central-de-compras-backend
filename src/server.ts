@@ -15,11 +15,13 @@ const app: Express = express()
 
 // Only test database connection in development environment
 // In production/serverless (Vercel), connections are established lazily on demand
+// This prevents connection pool exhaustion from repeated tests on every function invocation
 if (config.server.environment === 'development') {
-  const isDbConnected = await database.testConnection()
-  if (!isDbConnected) {
-    console.warn('Database connection failed, but server will continue')
-  }
+  database.testConnection().then((isDbConnected) => {
+    if (!isDbConnected) {
+      console.warn('Database connection failed, but server will continue')
+    }
+  })
 }
 
 app.use(
